@@ -1,0 +1,235 @@
+# Reprise des travaux - Specifications des offres
+
+Derniere mise a jour : 10/11/2026.
+
+Ce fichier est une synthese de reprise de la conversation, pas une transcription
+integrale. Il rassemble les decisions confirmees, les livrables et les questions
+encore ouvertes. Les annotations presentes dans la specification restent la
+reference detaillee pour les points a traiter.
+
+## Archive des echanges
+
+La conversation textuelle est sauvegardee dans
+[offers/archive/echanges-2026-11-10.md](offers/archive/echanges-2026-11-10.md) :
+35 demandes utilisateur et 221 segments de texte visibles de l'assistant,
+depuis le depannage de MarkItDown jusqu'a la demande de sauvegarde.
+
+Il s'agit d'un instantane, sans les sorties d'outils, les images ni les donnees
+internes de l'assistant. Le dernier echange etait encore en cours lors de
+l'export ; les messages posterieurs ne sont pas ajoutes automatiquement.
+Pour reprendre les decisions en vigueur, lire d'abord le present fichier.
+
+## Objectif
+
+L'utilisateur est architecte de solutions. Il souhaite rediger et maintenir des
+specifications en Markdown, puis generer des PDF partageables et exploitables par
+les equipes de developpement et de test.
+
+Le travail en cours porte sur le service d'offres de souscription STBL / nPFS /
+DALI. La v2.2 sert a ameliorer le fond et l'organisation, a partir de la v2.1
+validee.
+
+## Fichiers et commandes
+
+| Element | Emplacement et role |
+| --- | --- |
+| Template partage | [template/template-specification.md](template/template-specification.md) : presentation d'entreprise a reutiliser, sans la recreer. |
+| Apercu du template | [template/template-specification.pdf](template/template-specification.pdf). |
+| Reference validee | [offers/subscriptions-offers-v2.1.md](offers/subscriptions-offers-v2.1.md) et [PDF v2.1](offers/subscriptions-offers-v2.1.pdf) : a conserver inchanges. |
+| Version de travail | [offers/subscriptions-offers-v2.2.md](offers/subscriptions-offers-v2.2.md) et [PDF v2.2](offers/subscriptions-offers-v2.2.pdf). |
+| Exemple d'API fourni | [offers/offers_list.json](offers/offers_list.json) : reponse reelle de offer/list, non equivalente a un contrat exhaustif. |
+| Source Word archivee | [offers/archive/6 - STBL- NPFS - DALI - Subscriptions Offers - v2.1.docx](offers/archive/6%20-%20STBL-%20NPFS%20-%20DALI%20-%20Subscriptions%20Offers%20-%20v2.1.docx). |
+| Illustrations | Repertoire `offers/assets/`, partage entre les versions. |
+| Export PDF | [offers/export.sh](offers/export.sh). |
+| Conversion initiale Word | [offers/improve-content.lua](offers/improve-content.lua) et [offers/normalize-offers.lua](offers/normalize-offers.lua). |
+| Rendu du sommaire et des titres | [offers/format-contents.lua](offers/format-contents.lua). |
+
+Depuis la racine du depot :
+
+```bash
+bash offers/export.sh v2.2
+```
+
+Sans argument, le script exporte egalement la v2.2. Pour reexporter explicitement
+la v2.1 : `bash offers/export.sh v2.1`.
+
+**Attention : ne pas utiliser `--from-word` pour continuer la v2.2.** Cette option
+reconvertit le Word archive et ecrase le Markdown v2.1. Les modifications futures
+doivent etre effectuees directement dans le Markdown v2.2, puis exportees sans
+reconversion Word. Les filtres de conversion ne contiennent pas les annotations
+et les arbitrages ajoutes ensuite a la v2.2.
+
+L'export utilise Pandoc, Google Chrome headless et `pdfinfo`. Il effectue plusieurs
+passes jusqu'a stabilisation des destinations PDF, pour calculer les vrais
+numeros de page du sommaire. L'export final de la v2.2 a reussi apres les dernieres
+precisions sur TRANSIENT.
+
+## Cadre confirme par l'utilisateur
+
+- Tous les equipements et tous les types d'offres sont dans le perimetre.
+- La recherche d'offres est hors perimetre.
+- Tout le contenu fonctionnel de la v2.1 est valide. Ne pas modifier une regle
+  metier sur la base d'une supposition ou d'une incoherence apparente.
+- Le Swagger n'est pas disponible pour l'instant ; l'utilisateur pourra le
+  fournir plus tard.
+- Les ambiguites sont annotees dans la v2.2 avec des identifiants stables
+  `CLAR-OFF-xxx`, puis traitees avec l'utilisateur une par une.
+- L'objectif de reorganisation est de clarifier, deplacer et dedupliquer les
+  informations a comportement constant. La reorganisation complete n'a pas encore
+  ete realisee.
+- Le template et les fichiers v2.1 doivent rester inchanges.
+
+## Presentation deja mise en place
+
+- Template d'entreprise repris depuis l'exemple Espace Kids fourni au debut.
+- Bloc DATA PROTECTION conserve mot pour mot.
+- Historique complet dans VERSIONS HISTORY : versions 1.0 a 1.12, 2.0 et 2.1,
+  plus la ligne d'initialisation 2.2 dans la version de travail. Pas d'annexe
+  d'historique en doublon.
+- Colonnes INDICE et DATE centrees dans l'historique.
+- Sommaire de style LaTeX dans la specification offres : titre a gauche,
+  trois niveaux, retraits progressifs, points de conduite, vrais numeros de page
+  alignes a droite et liens cliquables. Le titre reste centre dans le template
+  d'origine, qui n'a pas ete modifie pour ces preferences propres aux offres.
+- Corps : titres en casse normale, sigles et identifiants techniques preserves.
+  Trois niveaux numerotes au maximum ; sous-titres plus profonds en gras sans
+  numero ni italique. Tous les titres sur la meme marge gauche, espace regulier
+  entre numero et texte, pas de tiret ni de point ajoute apres le numero.
+- Hierarchie typographique du corps : 16 / 13 / 11 / 10 points.
+- Phrase incomplete "It will deta" supprimee.
+- Surlignages jaunes supprimes.
+- Cinq appels HTTP et deux exemples JSON en blocs de code ; exemples JSON parses
+  et indentes sans modification de leur contenu.
+- 160 champs JSON des tableaux mis en code en ligne ; tableaux compactes et
+  largeurs de colonnes adaptees. Les 29 occurrences d'illustrations et les liens
+  techniques ont ete controles pendant la conversion.
+- Annotations de relecture en encadres gris, distinctes des regles validees.
+
+## Arbitrages deja traites
+
+### CLAR-OFF-001 : section supprimee
+
+L'utilisateur a demande de supprimer l'ancienne section 3.1.2 "Data recovery
+triggers" et son annotation. Le sommaire et les quatre renvois vers "Global
+management" ont ete corriges.
+
+Les sections suivantes sont desormais : 3.1.2 "Life cycle of an offer", 3.1.3
+"Global management" et 3.1.4 "Access to offer items". Les declencheurs de la
+section "Retrieving the offer list" sont conserves. Ne pas recreer la section
+supprimee ni renumeroter les identifiants CLAR-OFF restants.
+
+### TRANSIENT : nature et cycle confirmes
+
+Reponses de l'utilisateur :
+
+1. C'est un statut transitoire gere localement dans le produit, entre
+   "non-souscrit" et "souscrit", le temps du traitement de la souscription cote
+   DSI.
+2. La souscription demarre les 120 secondes.
+3. La sortie de TRANSIENT se produit a la fin des 120 secondes.
+
+Ces precisions sont integrees dans "Customer journey adaptation after
+subscription" et dans les annotations 002 et 010. Le document conserve l'exigence
+existante d'une duree configurable, de 120 secondes par defaut. Il distingue
+l'etat local des statuts recus de DALI sans imposer de choix de stockage interne.
+L'expiration de la temporisation ne constitue pas, a elle seule, une preuve de
+propagation effective des droits.
+
+Ne pas redemander qui produit TRANSIENT, ce qui le declenche ou quand il se
+termine. La gestion du redemarrage et des echecs apres expiration reste ouverte.
+
+## Etats deja documentes et observations API
+
+Les listes d'etats sont deja presentes dans la specification validee : ne pas
+demander a l'utilisateur de les reconstruire.
+
+- Partenaire : ACTIVE, CANCELED, CREATED, INACTIVE, NON-EXISTENT, UNSUBSCRIBED.
+- Commercial : Active, Activating, unspecified et, selon les tableaux, Desactive
+  ou Desactivating. L'orthographe exacte des valeurs reste a rapprocher du
+  contrat API ; ne pas inventer une normalisation.
+- Droits : ENTITLED et NOT_ENTITLED.
+
+La reponse `offers_list.json` contient 70 offres sur 70 : 55 BOUQUET, 8 APPLICATION,
+4 SERVICE et 3 UNMANAGED_APPLICATION. Elle ne contient pas de MULTIOFFER ni de
+subscriptionType=3. TRANSIENT y est absent, conformement a sa nature locale.
+
+Chemins observes : `data[].commercial.subscriptionStatus`,
+`data[].entitlementState`, `data[].commercial.partner.status`.
+
+- Statuts commerciaux observes : UNSPECIFIED, ACTIVE, DEACTIVATING.
+- Statuts partenaire observes : CREATED, ACTIVE.
+- 59 offres UNSPECIFIED / NOT_ENTITLED proposent l'action subscribe.
+- 8 offres ENTITLED proposent l'action unsubscribe.
+- Une offre combine DEACTIVATING / ENTITLED / CREATED : les trois dimensions ne
+  doivent pas etre confondues.
+- Les 3 UNMANAGED_APPLICATION n'ont pas ces statuts ni ces actions dans cet exemple.
+- Deux offres APPLICATION de subscriptionType=2 contiennent des chaines non vides
+  pour activationLink ET finalActivationLink dans la reponse list. Cela doit etre
+  rapproche de la phrase de la specification qui reserve finalActivationLink a
+  la reponse de souscription. Ne pas trancher automatiquement.
+
+Une reponse reelle illustre des combinaisons mais ne prouve ni l'exhaustivite du
+contrat ni une regle UI universelle. Ne pas afficher les URL d'activation ou
+d'autres donnees sensibles de cette reponse dans les comptes rendus.
+
+## Points encore ouverts
+
+Les 10 annotations suivantes restent presentes dans la v2.2 ; 002 et 010 sont
+partiellement clarifiees par les decisions TRANSIENT ci-dessus.
+
+| Repere | Suite a donner |
+| --- | --- |
+| CLAR-OFF-002 | Articulation des statuts commerciaux, droits et activation partenaire avec les decisions UI. Confirmer le role des actions subscribe/unsubscribe renvoyees par DALI pour les boutons. |
+| CLAR-OFF-003 | Strategie explicite par equipement pour pagination, recuperation complete, If-None-Match, 200/304, cache et rafraichissement force. |
+| CLAR-OFF-004 | Verification des chemins, casse, types et categories avec le Swagger. Exemples : commercial.commercialType declare Integer avec OPTION ; commercial.name declare Integer ; APPLICATION_NON_MANAGE versus UNMANAGED_APPLICATION. |
+| CLAR-OFF-005 | Role et disponibilite de activationLink/finalActivationLink, persistance, absence du cache et expiration ; tenir compte des liens effectivement presents dans list. |
+| CLAR-OFF-006 | Forme de la reponse de GET /api/offers/by-commercial-id/{commercialId} : objet ou collection, metadonnees de pagination, chemin du statut partenaire. |
+| CLAR-OFF-007 | Matrice des offres partenaires selon subscriptionType et statuts ; cas du type 3 non active, limite d'un appel toutes les 5 secondes et lien valable une heure. |
+| CLAR-OFF-008 | Regles UI de reference et doublons ; promotion versus promotions[], ordre d'application et durees prises en charge. |
+| CLAR-OFF-009 | Reponse 409 decrite comme liste mais illustree par un objet additionalInfo.incompatibleOffers ; libelle compatible/incompatible ; confirmation, force=true et erreur de la seconde requete. |
+| CLAR-OFF-010 | Cle de configuration effective, redemarrage pendant TRANSIENT, echec de rafraichissement ou droits absents apres expiration. Ne pas rouvrir les trois decisions deja confirmees. |
+| CLAR-OFF-011 | Consequences UI et cache en cas d'erreur, resultat incertain d'une action, conditions de relance et coherence avec l'ETag. |
+
+Priorite de reprise : terminer CLAR-OFF-002 avec la correspondance entre statuts,
+actions et affichage, puis traiter les autres points avec l'utilisateur. Les
+points 004 et 006 peuvent attendre le Swagger.
+
+## Organisation cible proposee, non encore appliquee
+
+1. Objet et perimetre.
+2. Architecture et responsabilites.
+3. Modele fonctionnel des offres et etats.
+4. Regles fonctionnelles transverses.
+5. Parcours utilisateur.
+6. Synchronisation et stockage local.
+7. Contrats d'interface et dictionnaire de donnees.
+8. Erreurs et comportements degrades.
+9. Criteres d'acceptation et tracabilite des regles.
+
+L'idee est de separer les regles metier des descriptions d'API, de decrire chaque
+parcours avec preconditions, scenario nominal, alternatives, erreurs et criteres
+d'acceptation, et de definir les regles une seule fois avec des identifiants
+stables. Cela reste une proposition a mettre en oeuvre progressivement, pas une
+autorisation d'inventer de nouvelles regles.
+
+## Contexte technique initial
+
+Le serveur MCP microsoft/markitdown a ete repare au debut de la session : uvx
+absent, puis incompatibilite Pydantic avec le SDK MCP utilise. Le lanceur installe
+est `/home/etudestb/.local/bin/uvx` et la commande testee est :
+
+```bash
+/home/etudestb/.local/bin/uvx --with 'pydantic<2.11' markitdown-mcp@0.0.1a4
+```
+
+La configuration MCP utilisateur utilise ce chemin absolu. Le test
+d'initialisation MCP et l'outil convert_to_markdown ont fonctionne. Une ancienne
+erreur de demarrage restait affichee avant le rechargement du serveur dans VS Code.
+
+## Consigne pour la prochaine session
+
+Lire ce fichier puis le Markdown v2.2 et ses annotations actuelles. Ne pas
+reconvertir le Word, ne pas refaire le template, ne pas modifier la v2.1 et ne pas
+redemander les decisions deja confirmees. Demander les seuls arbitrages encore
+necessaires. Apres une modification de la v2.2, reexporter le PDF depuis le
+Markdown et verifier les points touches ainsi que la coherence du sommaire.
