@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1200px; height: 430px; background: #fff; }
+svg { display: block; width: 1200px; height: 430px; font-family: Arial, sans-serif; }
+.zone { fill: #667085; font-size: 15px; font-weight: 700; letter-spacing: 1px; text-anchor: middle; }
+.group { fill: #f7f8fa; stroke: #d0d5dd; stroke-width: 1.5; }
+.group-title { fill: #475467; font-size: 16px; font-weight: 700; letter-spacing: .8px; text-anchor: middle; }
+.primary { fill: #e8f0fe; stroke: #6b8fc4; }
+.service { fill: #fce8e6; stroke: #c96b68; }
+.external { fill: #f2f4f7; stroke: #9aa3ad; }
+.box { stroke-width: 2; rx: 10; }
+.name { fill: #1b1f24; font-size: 20px; font-weight: 700; text-anchor: middle; }
+.detail { fill: #344054; font-size: 16px; text-anchor: middle; }
+.edge { fill: none; stroke: #52616b; stroke-width: 2.4; marker-start: url(#arrow); marker-end: url(#arrow); }
+.edge-label { fill: #344054; font-size: 15px; font-weight: 600; text-anchor: middle; paint-order: stroke; stroke: #fff; stroke-width: 5px; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+<svg viewBox="0 0 1200 430" role="img" aria-label="Offer service architecture: Device connects through APIM to DALI; DALI exchanges offer data with SI BYTEL, metadata with KL, and apps offers and status with AIBO.">
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52616b"/></marker>
+</defs>
+<text class="zone" x="120" y="166">CLIENT</text>
+<text class="zone" x="355" y="166">API GATEWAY</text>
+<text class="zone" x="610" y="166">OFFER SERVICE</text>
+<rect class="group" x="900" y="25" width="280" height="380" rx="12"/>
+<text class="group-title" x="1040" y="54">BACKEND SYSTEMS</text>
+<rect class="box primary" x="40" y="190" width="160" height="80"/>
+<text class="name" x="120" y="237">Device</text>
+<rect class="box primary" x="275" y="190" width="160" height="80"/>
+<text class="name" x="355" y="226">APIM</text><text class="detail" x="355" y="249">Proxy</text>
+<rect class="box service" x="510" y="190" width="200" height="80"/>
+<text class="name" x="610" y="226">DALI</text><text class="detail" x="610" y="249">Offer service</text>
+<rect class="box external" x="930" y="72" width="220" height="82"/>
+<text class="name" x="1040" y="106">SI BYTEL</text><text class="detail" x="1040" y="130">Offers</text>
+<rect class="box external" x="930" y="174" width="220" height="82"/>
+<text class="name" x="1040" y="208">KL</text><text class="detail" x="1040" y="232">Offer metadata</text>
+<rect class="box external" x="930" y="276" width="220" height="104"/>
+<text class="name" x="1040" y="306">AIBO</text>
+<text class="detail" x="1040" y="333">Apps offers</text>
+<text class="detail" x="1040" y="354">Apps offers status</text>
+<path class="edge" d="M200 230 H275"/><text class="edge-label" x="238" y="216">API calls</text>
+<path class="edge" d="M435 230 H510"/><text class="edge-label" x="472" y="216">Proxy</text>
+<path class="edge" d="M710 205 C790 205 840 113 930 113"/><text class="edge-label" x="820" y="153">Offers</text>
+<path class="edge" d="M710 230 H930"/><text class="edge-label" x="820" y="217">Metadata</text>
+<path class="edge" d="M710 255 C790 255 840 320 930 320"/><text class="edge-label" x="820" y="297">Apps APIs</text>
+</svg>
+</body>
+</html>

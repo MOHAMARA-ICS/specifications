@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1200px; height: 640px; background: #fff; }
+svg { display: block; width: 1200px; height: 640px; font-family: Arial, sans-serif; }
+.title { fill: #202a35; font-size: 30px; font-weight: 700; }
+.section { fill: #536273; font-size: 17px; font-weight: 700; letter-spacing: .8px; }
+.box { stroke-width: 2; rx: 12; }
+.blue { fill: #eaf1fb; stroke: #6684b1; }
+.amber { fill: #fff2d6; stroke: #c49337; }
+.green { fill: #e5f4e9; stroke: #5a956d; }
+.gray { fill: #f2f4f7; stroke: #9aa3ad; }
+.partner { fill: #edf3fa; stroke: #758da9; }
+.name { fill: #1b2530; font-size: 21px; font-weight: 700; text-anchor: middle; }
+.value { fill: #344456; font-size: 15px; text-anchor: middle; }
+.edge { fill: none; stroke: #536273; stroke-width: 3; marker-end: url(#arrow); }
+.dashed { fill: none; stroke: #748397; stroke-width: 2.5; stroke-dasharray: 8 7; marker-end: url(#arrowLight); }
+.edge-label { fill: #344456; font-size: 14px; font-weight: 600; text-anchor: middle; paint-order: stroke; stroke: #fff; stroke-width: 5px; stroke-linejoin: round; }
+.note { fill: #f6f7f8; stroke: #c9d0d8; stroke-width: 1.5; rx: 10; }
+.note-text { fill: #344456; font-size: 16px; }
+.caption { fill: #344456; font-size: 16px; text-anchor: start; }
+.rule { fill: #eaf3f2; stroke: #6f9a92; stroke-width: 1.5; rx: 10; }
+.rule-text { fill: #253b3a; font-size: 16px; }
+</style>
+</head>
+<body>
+<svg viewBox="0 0 1200 640" role="img" aria-label="Offer lifecycle showing entitlement and subscription processing separately from local TRANSIENT and partner account activation.">
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#536273"/></marker>
+  <marker id="arrowLight" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#748397"/></marker>
+</defs>
+<text class="title" x="42" y="46">Offer lifecycle</text>
+<text class="section" x="42" y="85">DALI ENTITLEMENT AND SUBSCRIPTION PROCESS</text>
+
+<rect class="box gray" x="30" y="125" width="170" height="115"/>
+<text class="name" x="115" y="166">Not entitled</text>
+<text class="value" x="115" y="198">NOT_ENTITLED</text>
+
+<rect class="box amber" x="265" y="125" width="180" height="115"/>
+<text class="name" x="355" y="166">Activating</text>
+<text class="value" x="355" y="198">ENTITLED</text>
+<text class="value" x="355" y="220">ACTIVATING</text>
+
+<rect class="box green" x="510" y="125" width="180" height="115"/>
+<text class="name" x="600" y="166">Subscribed</text>
+<text class="value" x="600" y="198">ENTITLED</text>
+<text class="value" x="600" y="220">ACTIVE</text>
+
+<rect class="box amber" x="755" y="125" width="200" height="115"/>
+<text class="name" x="855" y="166">Deactivating</text>
+<text class="value" x="855" y="198">ENTITLED</text>
+<text class="value" x="855" y="220">DEACTIVATING</text>
+
+<rect class="box gray" x="1020" y="125" width="150" height="115"/>
+<text class="name" x="1095" y="166">Not entitled</text>
+<text class="value" x="1095" y="198">NOT_ENTITLED</text>
+
+<path class="edge" d="M200 182 H265"/><text class="edge-label" x="232" y="114">Subscribe accepted</text>
+<path class="edge" d="M445 182 H510"/><text class="edge-label" x="477" y="114">Activation complete</text>
+<path class="edge" d="M690 182 H755"/><text class="edge-label" x="722" y="114">Unsubscribe request</text>
+<path class="edge" d="M955 182 H1020"/><text class="edge-label" x="987" y="114">Effective date</text>
+
+<text class="section" x="42" y="292">PRODUCT-LOCAL WAIT STATE</text>
+<rect class="box partner" x="150" y="316" width="330" height="100"/>
+<text class="name" x="315" y="353">TRANSIENT</text>
+<text class="value" x="315" y="380">Starts at subscription · default 120 s</text>
+<rect class="box gray" x="550" y="316" width="310" height="100"/>
+<text class="name" x="705" y="353">Timer expires</text>
+<text class="value" x="705" y="380">Exit local state; re-read DALI state</text>
+<path class="edge" d="M480 366 H550"/>
+<path class="dashed" d="M355 240 V278 H460 V316"/>
+
+<text class="section" x="900" y="292">PARTNER ACTIVATION</text>
+<text class="value" x="900" y="316">Only when required by the offer</text>
+<rect class="box partner" x="900" y="332" width="130" height="90"/>
+<text class="name" x="965" y="366">CREATED</text>
+<text class="value" x="965" y="393">Partner pending</text>
+<rect class="box green" x="1055" y="332" width="130" height="90"/>
+<text class="name" x="1120" y="366">ACTIVE</text>
+<text class="value" x="1120" y="393">Activated</text>
+<path class="edge" d="M1030 377 H1055"/>
+
+<rect class="note" x="30" y="458" width="340" height="72"/>
+<text class="note-text" x="52" y="487">Included offer</text>
+<text class="value" x="200" y="512">Separate condition; not a DALI state</text>
+
+<rect class="rule" x="395" y="458" width="775" height="72"/>
+<text class="rule-text" x="420" y="486">UI rule</text>
+<text class="value" x="785" y="512">subscriptionStatus = transition label · entitlementState + DALI actions = subscription/action</text>
+
+<text class="caption" x="42" y="586">Partner status is independent of entitlement. TRANSIENT expiry ends the local wait only; it does not confirm backend completion.</text>
+</svg>
+</body>
+</html>

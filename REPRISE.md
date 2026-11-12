@@ -39,6 +39,9 @@ validee.
 | Version de travail | [offers/subscriptions-offers-v2.2.md](offers/subscriptions-offers-v2.2.md) et [PDF v2.2](offers/subscriptions-offers-v2.2.pdf). |
 | Brouillon de reorganisation | [offers/subscriptions-offers-v2.2-reorganisee.md](offers/subscriptions-offers-v2.2-reorganisee.md) et [PDF de comparaison](offers/subscriptions-offers-v2.2-reorganisee.pdf) : copie structurelle, sans remplacement de la v2.2 annotee. |
 | Exemple d'API fourni | [offers/offers_list.json](offers/offers_list.json) : reponse reelle de offer/list, non equivalente a un contrat exhaustif. |
+| Base de connaissance produit | [offers/knowledge-base/PRODUCT.md](offers/knowledge-base/PRODUCT.md) : synthese des comportements cote equipement, contrats exposes, sources, exclusions et points ouverts. |
+| Sources API DALI | [PDF DPI API v2](offers/DPI-API%20V2-121126-175023.pdf) et [conversion MarkItDown](offers/knowledge-base/DPI-API-V2.markitdown.md). |
+| Source architecture DALI | [PDF SAG DALI lot 2](offers/ETDDPPS-SAG%20-%20P01558%20-%20DALI%20lot%202%20nPFS%20-%20offers%20v2%20%5BIN%20PROGRESS%5D-121126-175006.pdf) et [conversion MarkItDown](offers/knowledge-base/DALI-lot-2-nPFS-offers-v2.markitdown.md) : document indique IN PROGRESS, contexte non contractuel. |
 | Source Word archivee | [offers/archive/6 - STBL- NPFS - DALI - Subscriptions Offers - v2.1.docx](offers/archive/6%20-%20STBL-%20NPFS%20-%20DALI%20-%20Subscriptions%20Offers%20-%20v2.1.docx). |
 | Illustrations | Repertoire `offers/assets/`, partage entre les versions. |
 | Export PDF | [offers/export.sh](offers/export.sh). |
@@ -161,17 +164,34 @@ subscriptionType=3. TRANSIENT y est absent, conformement a sa nature locale.
 Chemins observes : `data[].commercial.subscriptionStatus`,
 `data[].entitlementState`, `data[].commercial.partner.status`.
 
+- `commercial.subscriptionStatus` decrit l'etat du processus de souscription,
+  pas si le client est abonne.
+- `entitlementState` indique si l'offre est souscrite (`ENTITLED`) ou non
+  (`NOT_ENTITLED`).
+- `commercial.partner.status` decrit l'etat d'activation de l'offre chez le
+  partenaire ; une offre Disney+ souscrite peut encore necessiter la creation du
+  compte partenaire.
+- Le DPI v2 decrit une souscription reussie avec `ENTITLED` et `ACTIVATING`, et
+  une resiliation en cours avec `ENTITLED` et `DEACTIVATING`. Pour une offre
+  impactee et resiliee lors d'une souscription forcee, il decrit
+  `NOT_ENTITLED` et `UNSPECIFIED`.
 - Statuts commerciaux observes : UNSPECIFIED, ACTIVE, DEACTIVATING.
 - Statuts partenaire observes : CREATED, ACTIVE.
 - 59 offres UNSPECIFIED / NOT_ENTITLED proposent l'action subscribe.
 - 8 offres ENTITLED proposent l'action unsubscribe.
-- Une offre combine DEACTIVATING / ENTITLED / CREATED : les trois dimensions ne
-  doivent pas etre confondues.
+- Le JSON partage montre aussi la combinaison DEACTIVATING / ENTITLED / CREATED.
+  Les decisions produit sont confirmees : ACTIVATING/ENTITLED conduit a la
+  gestion de l'abonnement apres TRANSIENT ; DEACTIVATING/ENTITLED affiche une
+  resiliation en cours sans relance ; CREATED/ENTITLED affiche l'activation
+  partenaire et la gestion. subscriptionStatus pilote seulement l'etat de
+  transition affiche ; entitlementState et les liens DALI pilotent l'abonnement
+  et les actions. Aucun fallback de champ absent n'est defini pour l'instant.
 - Les 3 UNMANAGED_APPLICATION n'ont pas ces statuts ni ces actions dans cet exemple.
 - Deux offres APPLICATION de subscriptionType=2 contiennent des chaines non vides
-  pour activationLink ET finalActivationLink dans la reponse list. Cela doit etre
-  rapproche de la phrase de la specification qui reserve finalActivationLink a
-  la reponse de souscription. Ne pas trancher automatiquement.
+  pour activationLink ET finalActivationLink dans la reponse list. Le DPI v2
+  decrit aussi la construction de finalActivationLink dans les formatages Get/List
+  pour certains cas, alors que le texte produit la presente comme disponible apres
+  souscription. Le moment et la formule exacts restent a confirmer dans Swagger.
 
 Une reponse reelle illustre des combinaisons mais ne prouve ni l'exhaustivite du
 contrat ni une regle UI universelle. Ne pas afficher les URL d'activation ou
@@ -179,12 +199,13 @@ d'autres donnees sensibles de cette reponse dans les comptes rendus.
 
 ## Points encore ouverts
 
-Les 10 annotations suivantes restent presentes dans la v2.2 ; 002 et 010 sont
-partiellement clarifiees par les decisions TRANSIENT ci-dessus.
+Les 10 annotations restent visibles dans la v2.2 ; CLAR-OFF-002 est maintenant
+confirmee et ses regles produit sont integrees. Neuf points conservent des
+suites ouvertes. CLAR-OFF-010 est
+partiellement clarifiee par les decisions TRANSIENT ci-dessus.
 
 | Repere | Suite a donner |
 | --- | --- |
-| CLAR-OFF-002 | Articulation des statuts commerciaux, droits et activation partenaire avec les decisions UI. Confirmer le role des actions subscribe/unsubscribe renvoyees par DALI pour les boutons. |
 | CLAR-OFF-003 | Strategie explicite par equipement pour pagination, recuperation complete, If-None-Match, 200/304, cache et rafraichissement force. |
 | CLAR-OFF-004 | Verification des chemins, casse, types et categories avec le Swagger. Exemples : commercial.commercialType declare Integer avec OPTION ; commercial.name declare Integer ; APPLICATION_NON_MANAGE versus UNMANAGED_APPLICATION. |
 | CLAR-OFF-005 | Role et disponibilite de activationLink/finalActivationLink, persistance, absence du cache et expiration ; tenir compte des liens effectivement presents dans list. |
@@ -195,8 +216,7 @@ partiellement clarifiees par les decisions TRANSIENT ci-dessus.
 | CLAR-OFF-010 | Cle de configuration effective, redemarrage pendant TRANSIENT, echec de rafraichissement ou droits absents apres expiration. Ne pas rouvrir les trois decisions deja confirmees. |
 | CLAR-OFF-011 | Consequences UI et cache en cas d'erreur, resultat incertain d'une action, conditions de relance et coherence avec l'ETag. Le document source contient aussi trois liens vers l'ancre OAuth `#_Oauth_errors_when`, dont la cible est absente. Le brouillon conserve ce probleme preexistant sans ajouter de nouveau lien casse. |
 
-Priorite de reprise : terminer CLAR-OFF-002 avec la correspondance entre statuts,
-actions et affichage, puis traiter les autres points avec l'utilisateur. Les
+Priorite de reprise : traiter les points encore ouverts avec l'utilisateur. Les
 points 004 et 006 peuvent attendre le Swagger.
 
 ## Brouillon de reorganisation

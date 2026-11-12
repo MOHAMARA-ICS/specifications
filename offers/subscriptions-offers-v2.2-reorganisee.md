@@ -181,7 +181,6 @@ tr { break-inside: avoid; }
 -   [3. Service overview](#introduction)
     -   [3.1. Architecture and responsibilities](#solution-concept)
         -   [3.1.1. Global architecture](#global-architecture)
-        -   [3.1.2. Access to offer items](#access-to-offer-items)
     -   [3.2. Offer lifecycle](#life-cycle-of-an-offer)
 -   [4. Offer retrieval and data model](#uses-cases)
     -   [4.1. Shared DALI request headers](#global-management)
@@ -246,61 +245,37 @@ It also specifies how subscription information is retrieved from multimedia asse
 
 # Service overview {#introduction}
 
-This document explains how to obtain the list of subscribed and unsubscribed offers, subscription, and cancellation of offers through the DALI platform.
+The offer service allows devices to retrieve subscribed and unsubscribed offers through DALI and to request subscriptions or unsubscriptions.
 
 ## Architecture and responsibilities {#solution-concept}
 
 ### Global architecture
 
-A single interface with the device for the entire Offer service: ![](assets/media/image2.png){width="6.3in" height="2.1972222222222224in"}
+Devices access the offer service through APIM, which forwards their requests to DALI. DALI retrieves offer data from SI BYTEL, offer metadata from KL, and app offer information from AIBO, then returns the response through APIM.
 
--   Business logic with KL will be implemented on the DALI side.
+![Global offer service architecture](assets/media/architecture-global.png){.architecture-diagram width="6.3in"}
 
--   There is no need to set up aggregation on the Device side to handle KL model data when retrieving offers.
-
--   DALI retrieves offers, whether subscribed or not, from the information system (IS) and enriches them with KL metadata to prepare a complete and consistent response to share with the device.
-
--   There is no longer a need to manage IS APIs on the device side for subscription and cancellation of offers, as DALI will handle this task.
-
-### Access to offer items
-
-Use cases require the retrieval of offers from DALI:
-
-![](assets/media/image4.png){width="4.8137390638670166in" height="1.5in"}
-
-Use cases use offer objects locally:
-
-![](assets/media/image5.png){width="6.015199037620297in" height="1.7362051618547683in"}
+Devices rely on DALI for offer retrieval and subscription actions. DALI retrieves offers from the information system, enriches them with KL metadata, and returns the response; devices do not aggregate KL data or call the information system's subscription APIs directly.
 
 ## Offer lifecycle {#life-cycle-of-an-offer}
 
-::: {#clar-off-002 .review-note}
-**À clarifier / valider - CLAR-OFF-002 : états et source de vérité.** Expliciter les relations et la priorité entre `commercial.subscriptionStatus`, `entitlementState`, les variantes `entitlementStatus` / `entitlmentStatus` mentionnées dans les parcours et le statut d\'activation partenaire, ainsi que les actions autorisées et le comportement UI attendu. La nature de `TRANSIENT` est clarifiée : il s\'agit d\'un état temporaire géré localement dans le produit, démarré par la souscription et quitté à l\'expiration des 120 secondes. Ce n\'est pas un statut à attendre de la réponse DALI.
-:::
+An offer lifecycle uses three independent dimensions:
 
-An offer is an object. The metadata of an offer allows it to be displayed and managed. Below is its lifecycle::
+- `entitlementState` indicates whether the offer is entitled (`ENTITLED`) or not (`NOT_ENTITLED`).
+- `commercial.subscriptionStatus` describes the subscription or cancellation process and drives the transition state shown to the user.
+- `commercial.partner.status` describes partner-account activation when the offer requires it.
 
-::: {.lifecycle-table}
+These dimensions can coexist without meaning the same thing. For example, the shared Disney+ response has `DEACTIVATING`, `ENTITLED`, and `CREATED` at the same time. DALI action links determine which subscription API action is available; process or partner status does not replace those links.
 
-  ---------------------------------------------------------------------------------------------------------------------------
-  **Status**                              **Signification**                                            **Possible actions**
-  --------------------------------------- ------------------------------------------------------------ ----------------------
-  Not subscribe                           Cancel an offre                                              Subscribe
+![Offer lifecycle and independent state dimensions](assets/media/offer-lifecycle.png){.architecture-diagram width="6.3in"}
 
-  Subscribe                               Subscribe to an offer                                        unsubscribe
+After a subscription starts, the device enters the local `TRANSIENT` state for 120 seconds by default. Timer expiry ends only that local wait; it does not confirm backend completion. Once the timer expires, the product uses the current DALI state:
 
-  Subscribe (real status not subscribe)   cancel an offer, but this possibility is blocked by the UI   unsubscribe
+- `ACTIVATING` with `ENTITLED`: show subscription management instead of “Subscribe”; offer unsubscription only if DALI provides the `unsubscribe` action.
+- `DEACTIVATING` with `ENTITLED`: show “Résiliation en cours” and do not issue another unsubscription request.
+- `partner.status=CREATED` with `ENTITLED`: show both partner activation and subscription management. Hide the activation prompt when `partner.status=ACTIVE`.
 
-  include                                 Offer included by default in user subscription               \-
-  ---------------------------------------------------------------------------------------------------------------------------
-
-:::
-
-***[Transition between states:]{.underline}***
-
-![](assets/media/image3.png){width="6.292361111111111in" height="2.236111111111111in"}
-
-*NOTE: The included offers are not retrieved as part of nPFS, which has a UI impact compared to what is currently implemented in the legacy system, where these types of offers are displayed in the UI.*
+Included offers are separate from this DALI offer lifecycle and are not returned by the nPFS offer API.
 :::
 
 ::: {.next-page .technical-content}
@@ -559,7 +534,7 @@ Enum: \"ENTITLED\" \"NOT_ENTITLED\"
 ```{=html}
 <td>
 ```
-In our case, this field should not be specified, as DALI will return all subscribed and unsubscribed offers.
+In this use case, omit this field to retrieve both subscribed and unsubscribed offers. The DALI v2 interface also requires it to be omitted when requesting `UNMANAGED_APPLICATION` offers.
 ```{=html}
 </td>
 ```
@@ -7591,7 +7566,7 @@ a)  **If the offer is not incompatible with other offers :**
 b)  **If the offer is incompatible with other offers :**
 
 ::: {#clar-off-009 .review-note}
-**À clarifier / valider - CLAR-OFF-009 : incompatibilités et réponse 409.** Aligner la description « list of string » avec l\'exemple d\'objet contenant `additionalInfo.incompatibleOffers`, après vérification du contrat. Confirmer le libellé de l\'action « cancellation of compatible offers » dans le tableau d\'erreurs par rapport aux offres incompatibles du parcours, et expliciter l\'enchaînement confirmation utilisateur / `force=true` ainsi que le traitement d\'une erreur lors de cette seconde requête. Aucun comportement n\'est corrigé par supposition.
+**À clarifier / valider - CLAR-OFF-009 : incompatibilités et réponse 409.** Le DPI v2 confirme le cas `409` / `Incompatible offer`, mais ne précise pas suffisamment la structure du corps. Aligner la description « list of string » avec l\'exemple d\'objet contenant `additionalInfo.incompatibleOffers`, après vérification du contrat. Confirmer le libellé de l\'action « cancellation of compatible offers » par rapport aux offres incompatibles du parcours, et expliciter l\'enchaînement confirmation utilisateur / `force=true` ainsi que le traitement d\'une erreur lors de cette seconde requête. Aucun comportement n\'est corrigé par supposition.
 :::
 
 > *[Success Response :]{.underline}*
@@ -7630,7 +7605,7 @@ b)  **If the offer is incompatible with other offers :**
 ### Activation status and partner journey {#user-journey}
 
 ::: {#clar-off-005 .review-note}
-**À clarifier / valider - CLAR-OFF-005 : disponibilité du lien d\'activation.** Préciser comment le parcours retrouve `finalActivationLink` à chaque consultation alors que le modèle indique que ce champ n\'est fourni qu\'après une souscription et doit être conservé localement. Expliciter le comportement en cas d\'absence du lien dans le cache, de redémarrage ou d\'expiration, ainsi que son articulation avec `activationLink`, sans changer le parcours validé.
+**À clarifier / valider - CLAR-OFF-005 : disponibilité du lien d\'activation.** Les sources divergent sur le moment où `finalActivationLink` est fourni : le parcours produit indique qu\'il est retourné après souscription et conservé localement, tandis que le DPI v2 décrit aussi sa construction lors du formatage des réponses Get/List pour certains cas ; le JSON partagé en contient dans une réponse List. Confirmer le contrat courant avec Swagger. Expliciter le comportement produit en cas d\'absence du lien, de redémarrage ou d\'expiration, sans reconstruire le lien côté équipement ni changer le parcours validé.
 :::
 
 > **[What changes compared to the legacy version:]{.underline}**
@@ -7668,7 +7643,7 @@ GET /api/offers/by-commercial-id/{commercialId}
 ```
 
 ::: {#clar-off-006 .review-note}
-**À clarifier / valider - CLAR-OFF-006 : réponse de la consultation unitaire.** Vérifier avec le Swagger la forme exacte de la réponse de cette API appelée avec un identifiant commercial : objet unique ou collection, présence de `totalElements`, `totalPages` et `currentPage`, et chemin exact du statut partenaire. La description actuelle de la réponse est conservée jusqu\'à validation du contrat.
+**À clarifier / valider - CLAR-OFF-006 : réponse de la consultation unitaire.** Le DPI v2 décrit une réponse de type liste d\'objets `OfferItem` pour le Get par identifiant commercial, tandis que la description actuelle présente une enveloppe `data` avec `totalElements`, `totalPages` et `currentPage`. Vérifier avec le Swagger la forme exacte de la réponse, sa cardinalité et le chemin du statut partenaire ; ne pas déduire la forme à partir du seul document DPI.
 :::
 
 (le path de l\'api est défini dans le swagger)
@@ -7712,7 +7687,7 @@ GET /api/offers/by-commercial-id/{commercialId}
 ### Fluid and non-fluid offers {#management-of-fluid-and-non-fluid-offers.}
 
 ::: {#clar-off-007 .review-note}
-**À clarifier / valider - CLAR-OFF-007 : activation des offres partenaires.** Rendre explicite la matrice `subscriptionType` / statut commercial / statut partenaire / actions UI, notamment pour le type `3` non activé auquel une nouvelle souscription est proposée. Préciser la portée de la limite d\'un appel toutes les 5 secondes et le comportement à l\'expiration du lien valable une heure. Il s\'agit de documenter précisément les règles déjà validées, non de les remplacer.
+**À clarifier / valider - CLAR-OFF-007 : activation des offres partenaires.** Les exemples produit validés associent `subscriptionType=2` à Disney+ / QR code et `subscriptionType=3` à Dorcel / application ou lien partenaire. Le DPI v2 contient des descriptions contradictoires de ces types et de la construction de `finalActivationLink` ; confirmer le dictionnaire courant avec Swagger sans remplacer les exemples validés par supposition. Rendre explicite la matrice statut commercial / `entitlementState` / statut partenaire / actions UI, notamment pour le type `3` non activé auquel une nouvelle souscription est proposée. Préciser la portée de la limite d\'un appel toutes les 5 secondes et le comportement à l\'expiration du lien valable une heure.
 :::
 
 -   Non-fluid offer (as Disney+)
@@ -7952,6 +7927,7 @@ i.  The user presses the unsubscribe button and enters his purchase code
 .technical-content pre { margin: 3mm 0; padding: 2.5mm; background: #f3f4f4; border: 0.5pt solid #c5cbcb; font-size: 8pt; line-height: 1.35; }
 .technical-content pre code { white-space: pre-wrap; }
 .technical-content img { max-width: 100%; max-height: 205mm; height: auto !important; object-fit: contain; }
+.technical-content img.architecture-diagram { display: block; margin: 0 auto; }
 .technical-content .document-header img { width: 34mm; }
 .technical-content blockquote { margin: 3mm 0 3mm 4mm; }
 .technical-content pre { white-space: pre-wrap; overflow-wrap: anywhere; }
