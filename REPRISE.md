@@ -1,6 +1,6 @@
 # Reprise des travaux - Specifications des offres
 
-Derniere mise a jour : 10/11/2026.
+Derniere mise a jour : 12/11/2026.
 
 Ce fichier est une synthese de reprise de la conversation, pas une transcription
 integrale. Il rassemble les decisions confirmees, les livrables et les questions
@@ -37,6 +37,7 @@ validee.
 | Apercu du template | [template/template-specification.pdf](template/template-specification.pdf). |
 | Reference validee | [offers/subscriptions-offers-v2.1.md](offers/subscriptions-offers-v2.1.md) et [PDF v2.1](offers/subscriptions-offers-v2.1.pdf) : a conserver inchanges. |
 | Version de travail | [offers/subscriptions-offers-v2.2.md](offers/subscriptions-offers-v2.2.md) et [PDF v2.2](offers/subscriptions-offers-v2.2.pdf). |
+| Brouillon de reorganisation | [offers/subscriptions-offers-v2.2-reorganisee.md](offers/subscriptions-offers-v2.2-reorganisee.md) et [PDF de comparaison](offers/subscriptions-offers-v2.2-reorganisee.pdf) : copie structurelle, sans remplacement de la v2.2 annotee. |
 | Exemple d'API fourni | [offers/offers_list.json](offers/offers_list.json) : reponse reelle de offer/list, non equivalente a un contrat exhaustif. |
 | Source Word archivee | [offers/archive/6 - STBL- NPFS - DALI - Subscriptions Offers - v2.1.docx](offers/archive/6%20-%20STBL-%20NPFS%20-%20DALI%20-%20Subscriptions%20Offers%20-%20v2.1.docx). |
 | Illustrations | Repertoire `offers/assets/`, partage entre les versions. |
@@ -75,9 +76,13 @@ precisions sur TRANSIENT.
 - Les ambiguites sont annotees dans la v2.2 avec des identifiants stables
   `CLAR-OFF-xxx`, puis traitees avec l'utilisateur une par une.
 - L'objectif de reorganisation est de clarifier, deplacer et dedupliquer les
-  informations a comportement constant. La reorganisation complete n'a pas encore
-  ete realisee.
+  informations a comportement constant. Un premier brouillon de structure a ete
+  genere a cote de la v2.2 annotee pour comparaison.
 - Le template et les fichiers v2.1 doivent rester inchanges.
+- La specification v2.2 decrit le service (donnees, contrats, traitements et
+  resultats fonctionnels), pas la presentation de la UI. Maquettes, captures et
+  exemples d'ecrans sont illustratifs uniquement ; l'interface peut evoluer
+  independamment du service.
 
 ## Presentation deja mise en place
 
@@ -185,16 +190,46 @@ partiellement clarifiees par les decisions TRANSIENT ci-dessus.
 | CLAR-OFF-005 | Role et disponibilite de activationLink/finalActivationLink, persistance, absence du cache et expiration ; tenir compte des liens effectivement presents dans list. |
 | CLAR-OFF-006 | Forme de la reponse de GET /api/offers/by-commercial-id/{commercialId} : objet ou collection, metadonnees de pagination, chemin du statut partenaire. |
 | CLAR-OFF-007 | Matrice des offres partenaires selon subscriptionType et statuts ; cas du type 3 non active, limite d'un appel toutes les 5 secondes et lien valable une heure. |
-| CLAR-OFF-008 | Regles UI de reference et doublons ; promotion versus promotions[], ordre d'application et durees prises en charge. |
+| CLAR-OFF-008 | Principe confirme : les ecrans sont illustratifs et non contractuels ; le service est normatif. L'objectif de la specification a ete recentre sur le service. Reste a verifier avec le Swagger les chemins `commercial.promotion` versus `commercial.promotions[]` et la semantique de `limited_period`, `one_time` et `forever`. Ne pas deduire des maquettes des exigences de presentation. |
 | CLAR-OFF-009 | Reponse 409 decrite comme liste mais illustree par un objet additionalInfo.incompatibleOffers ; libelle compatible/incompatible ; confirmation, force=true et erreur de la seconde requete. |
 | CLAR-OFF-010 | Cle de configuration effective, redemarrage pendant TRANSIENT, echec de rafraichissement ou droits absents apres expiration. Ne pas rouvrir les trois decisions deja confirmees. |
-| CLAR-OFF-011 | Consequences UI et cache en cas d'erreur, resultat incertain d'une action, conditions de relance et coherence avec l'ETag. |
+| CLAR-OFF-011 | Consequences UI et cache en cas d'erreur, resultat incertain d'une action, conditions de relance et coherence avec l'ETag. Le document source contient aussi trois liens vers l'ancre OAuth `#_Oauth_errors_when`, dont la cible est absente. Le brouillon conserve ce probleme preexistant sans ajouter de nouveau lien casse. |
 
 Priorite de reprise : terminer CLAR-OFF-002 avec la correspondance entre statuts,
 actions et affichage, puis traiter les autres points avec l'utilisateur. Les
 points 004 et 006 peuvent attendre le Swagger.
 
-## Organisation cible proposee, non encore appliquee
+## Brouillon de reorganisation
+
+Le brouillon [v2.2 reorganise](offers/subscriptions-offers-v2.2-reorganisee.md)
+et son [PDF](offers/subscriptions-offers-v2.2-reorganisee.pdf) presentent une
+premiere organisation alternative, a comparer avec la v2.2 annotee. Les grandes
+parties sont desormais : vue d'ensemble du service, recuperation et modele de
+donnees/API, puis parcours utilisateur. Les titres, renvois numeriques et le
+sommaire ont ete adaptes au nouvel ordre. L'en-tete utilise une seule table HTML
+du template avec le logo PNG reference comme fichier. Elle est placee dans un
+`thead` repetitif pour apparaitre sur toutes les pages. Le Markdown ne contient
+ni objet SVG ni image encodee en ligne ; le PNG reste une ressource fichier.
+Le trait parasite en haut des pages venait de la bordure `tbody` par defaut de
+Pandoc sur le tableau enveloppe ; cette bordure est neutralisee uniquement pour
+le tableau enveloppe, sans toucher aux bordures des tableaux fonctionnels.
+couverture, signatures, sommaire et references. Les 28 numeros de page du
+sommaire ont ete controles contre les destinations du PDF.
+
+Le contenu a ete deplace, pas reecrit : 14 tableaux, 29 illustrations, 7 blocs
+de code et liens externes verifies. Le brouillon conserve un renvoi OAuth sans
+cible qui existait deja dans la source. Il n'est pas valide comme nouvelle
+version ; ne pas ecraser la v2.2 annotee avant revue par l'utilisateur.
+
+Pour recreer le brouillon depuis la v2.2 source :
+
+```bash
+pandoc offers/subscriptions-offers-v2.2.md --from=markdown-smart-implicit_figures --lua-filter=offers/reorganize-offers.lua --standalone --to=markdown --wrap=none --output=offers/subscriptions-offers-v2.2-reorganisee.md
+bash offers/export.sh v2.2-reorganisee
+```
+
+Les ameliorations de structure ci-dessous sont appliquees partiellement dans le
+brouillon ; elles restent une proposition jusqu'a comparaison et validation.
 
 1. Objet et perimetre.
 2. Architecture et responsabilites.
@@ -228,7 +263,8 @@ erreur de demarrage restait affichee avant le rechargement du serveur dans VS Co
 
 ## Consigne pour la prochaine session
 
-Lire ce fichier puis le Markdown v2.2 et ses annotations actuelles. Ne pas
+Lire ce fichier puis le Markdown v2.2 et le brouillon reorganise. Comparer les
+deux structures avec l'utilisateur avant toute promotion du brouillon. Ne pas
 reconvertir le Word, ne pas refaire le template, ne pas modifier la v2.1 et ne pas
 redemander les decisions deja confirmees. Demander les seuls arbitrages encore
 necessaires. Apres une modification de la v2.2, reexporter le PDF depuis le

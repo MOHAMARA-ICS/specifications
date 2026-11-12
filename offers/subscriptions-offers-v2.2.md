@@ -246,11 +246,13 @@ tr { break-inside: avoid; }
 **Cadre de relecture de la v2.2.** La v2.1 constitue la référence fonctionnelle validée. Le périmètre couvre tous les équipements et tous les types d'offres ; la recherche reste hors périmètre. Les mentions « À clarifier / valider » ci-dessous identifient des précisions à apporter, sans modifier ni invalider les règles existantes. La vérification des contrats API sera réalisée lorsque le Swagger sera disponible.
 :::
 
-This document will describe the options for purchasing live subscription services for linear assets, Cup, and SVOD.
+::: service-scope
+**Nature de cette spécification.** Ce document décrit le service d'offres : ses données, ses contrats d'interface, ses règles de traitement et ses résultats fonctionnels. Il ne prescrit pas la présentation des écrans. Les maquettes, captures et illustrations d'écrans sont fournies à titre d'exemple uniquement ; l'interface peut évoluer indépendamment tant que le contrat et le comportement du service sont respectés.
+:::
 
-The device will display a card with subscription information on the first page, and when the user clicks on one of the offers, the front-end (FE) will display the subscription offer page. The user interface will include the title, description, and image of the subscription. the page will also list the live resources and CUP/VOP shops included in the subscription.
+This document specifies the offer service for linear assets, CUP and SVOD. It describes how devices retrieve offer data, access the associated metadata, and request subscription or unsubscription through DALI.
 
-This document will explain the method for extracting subscription purchase data from multimedia asset files using DALI.
+It also specifies how subscription information is retrieved from multimedia asset data through DALI. The service contract and functional behavior are normative; screen layouts and UI illustrations elsewhere in this document are examples only.
 :::
 
 ::: {.next-page .technical-content}
@@ -1831,7 +1833,7 @@ This object must be stored in the local offer database to be utilized by the UI 
 ### Using metadata for the UI interface
 
 ::: {#clar-off-008 .review-note}
-**À clarifier / valider - CLAR-OFF-008 : règles UI et promotions.** Identifier la section de référence pour les écrans également décrits dans la partie `BOUQUET`, et préciser les variantes applicables par équipement et type d'offre. Rapprocher les chemins employés dans les formules (`commercial.promotion`) de ceux du modèle (`commercial.promotions[]`), puis expliciter l'ordre d'application des promotions et le comportement associé aux durées `limited_period`, `one_time` et `forever`, en conservant les limitations actuelles.
+**Principe confirmé - CLAR-OFF-008 : UI illustrative, service normatif.** Les maquettes, captures et exemples d'écrans de ce document sont illustratifs et ne constituent pas des exigences de présentation. L'interface peut évoluer indépendamment ; cette spécification porte sur les données et le comportement du service. Les règles de prix et de promotion décrites ici restent pertinentes dans la mesure où elles définissent les données ou résultats du service. À clarifier avec le Swagger : les chemins `commercial.promotion` utilisés dans les formules par rapport au modèle `commercial.promotions[]`, et la sémantique de `limited_period`, `one_time` et `forever`. Ne pas déduire de ces illustrations une mise en page ou un parcours écran obligatoire.
 :::
 
 4)  Several offers associated to the channel (Offer with promotion)
@@ -2314,6 +2316,7 @@ i.  The user presses the unsubscribe button and enters his purchase code
 <style>
 .versions th:nth-child(-n+2), .versions td:nth-child(-n+2) { text-align: center; }
 .review-note { margin: 3mm 0; padding: 2mm 3mm; border-left: 2px solid #707070; background: #f4f4f4; color: #333; font-size: 9pt; line-height: 1.3; break-inside: avoid; }
+.service-scope { margin: 3mm 0; padding: 2mm 3mm; border-left: 2px solid #47717a; background: #eef4f4; color: #222; font-size: 9pt; line-height: 1.3; break-inside: avoid; }
 .spec-contents ul { list-style: none; padding-left: 5mm; margin: 1mm 0; }
 .spec-contents > ul { padding-left: 0; }
 .spec-contents li { font-size: 9pt; margin-bottom: 1mm; }

@@ -28,21 +28,21 @@ body {
   max-width: 180mm;
   margin: 0 auto;
   padding: 8mm 0;
-  font: 10pt/1.25 Arial, sans-serif;
+  font: 10pt/1 Arial, sans-serif;
 }
 body > header#title-block-header { display: none; }
 h1, h2 { color: #000; font-weight: bold; }
-h1 { margin: 0 0 8mm; font-size: 15pt; }
+h1 { margin: 0 0 2mm; font-size: 15pt; }
 h2 { margin: 0; padding: 2mm; font-size: 10pt; text-align: center; }
 p { margin: 0 0 3mm; }
-table { display: table; width: 100%; margin: 0; overflow: visible; border-collapse: collapse; table-layout: fixed; }
+table { display: table; width: 100%; margin: 0; overflow: visible; border-collapse: collapse; table-layout: auto; font: 9pt Arial, sans-serif; }
 table, th, td { box-sizing: border-box; }
-th, td { border: 1px solid #000; padding: 2mm; vertical-align: top; overflow-wrap: anywhere; }
-th { font-weight: bold; text-align: center; }
+th, td { border: 1px solid #000; padding: 0.35mm 1.6mm; vertical-align: top; overflow-wrap: anywhere; height: auto !important; }
+th { background: #b4c7e7; font-weight: bold; text-align: center; }
 thead { display: table-header-group; }
 tr { break-inside: avoid; }
 .document-header { margin-bottom: 5mm; }
-.document-header td { padding: 1mm; text-align: center; vertical-align: middle; font-weight: bold; }
+.document-header td { padding: 0.35mm 1.6mm; text-align: center; vertical-align: middle; font-weight: bold; }
 .document-header .brand { width: 22%; }
 .document-header .brand img { display: block; width: 34mm; max-width: 100%; height: auto; margin: auto; }
 .document-header .document-kind { width: 56%; font-size: 11pt; }
@@ -54,17 +54,25 @@ tr { break-inside: avoid; }
 .data-protection p { font-weight: bold; font-size: 9pt; margin-bottom: 3mm; }
 .data-protection p:last-child { margin-bottom: 1mm; }
 .versions h2, .signing h2 { border: 1px solid #000; border-bottom: 0; }
-.versions table { font-size: 8pt; }
-.versions th, .versions td { padding: 1mm; }
-.versions th:nth-child(1) { width: 7%; }
+.versions table { font-size: 9pt; }
+.versions th, .versions td { padding: 0.35mm 1.6mm; }
+.versions th:nth-child(1) { width: 9%; }
 .versions th:nth-child(2) { width: 12%; }
-.versions th:nth-child(3) { width: 42%; }
+.versions th:nth-child(3) { width: 40%; }
 .versions th:nth-child(4), .versions th:nth-child(5), .versions th:nth-child(6) { width: 13%; }
-.versions td { height: 7mm; }
+.versions td { height: auto; }
 .signing { margin-top: 8mm; break-inside: avoid; }
 .signing h2 { font-size: 9pt; }
 .signing table { font-size: 9pt; }
 .signing td { height: 22mm; }
+.spec-contents ul { list-style: none; padding-left: 5mm; margin: 1mm 0; }
+.spec-contents > ul { padding-left: 0; }
+.spec-contents li { font-size: 9pt; }
+.technical-content h1, .references h1 { margin: 0 0 2mm; font-size: 16pt; }
+.technical-content h2 { margin: 2mm 0; padding: 0; font-size: 13pt; text-align: left; }
+.technical-content h3 { margin: 2mm 0; font-size: 11pt; }
+.technical-content h4, .technical-content h5, .technical-content h6 { margin: 4mm 0 2mm; font-size: 10pt; }
+.technical-content h1, .technical-content h2, .technical-content h3, .technical-content h4, .technical-content h5, .technical-content h6 { break-after: avoid; padding: 0; font-weight: bold; font-style: normal; text-align: left; line-height: 1.25; }
 .next-page { break-before: page; page-break-before: always; }
 .references th:first-child { width: 12%; }
 .references th:nth-child(2) { width: 68%; }
@@ -139,7 +147,7 @@ tr { break-inside: avoid; }
 
 :::
 
-::: {.next-page}
+::: {.next-page .spec-contents}
 
 <header class="document-header">
 <table aria-label="En-tête du document">
@@ -159,7 +167,7 @@ tr { break-inside: avoid; }
 </table>
 </header>
 
-# Table of contents {style="text-align: center;"}
+# Table of contents {style="text-align: left;"}
 
 <!-- Sommaire volontairement vide. -->
 

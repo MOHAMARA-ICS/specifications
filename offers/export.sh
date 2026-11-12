@@ -3,8 +3,8 @@ set -euo pipefail
 cd -- "$(dirname -- "$0")"
 
 version="${1:-v2.2}"
-if [[ $# -gt 1 ]] || [[ "$version" != "--from-word" && ! "$version" =~ ^v[0-9]+\.[0-9]+$ ]]; then
-  printf 'Usage: bash export.sh [vMAJOR.MINOR|--from-word]\n' >&2
+if [[ $# -gt 1 ]] || [[ "$version" != "--from-word" && ! "$version" =~ ^v[0-9]+\.[0-9]+(-[a-z0-9-]+)?$ ]]; then
+  printf 'Usage: bash export.sh [vMAJOR.MINOR[-draft-label]|--from-word]\n' >&2
   exit 2
 fi
 
@@ -27,11 +27,16 @@ fi
 
 temporary_directory=$(mktemp -d)
 trap 'rm -rf -- "$temporary_directory"' EXIT
+repeat_header_filter=()
+if [[ "$version" == "v2.2-reorganisee" ]]; then
+  repeat_header_filter+=(--lua-filter=repeat-template-header.lua)
+fi
 for pass in 1 2 3; do
   CONTENTS_DESTINATIONS="$temporary_directory/destinations.txt" \
     pandoc "$markdown" \
       --from=markdown-smart-implicit_figures --standalone --embed-resources \
-      --lua-filter=format-contents.lua --number-sections \
+      --lua-filter=format-contents.lua "${repeat_header_filter[@]}" \
+      --number-sections \
       --output="$temporary_directory/specification.html"
   google-chrome --headless --no-pdf-header-footer \
     --user-data-dir="$temporary_directory/chrome" \
