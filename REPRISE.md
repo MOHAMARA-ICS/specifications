@@ -40,8 +40,8 @@ validee.
 | Brouillon de reorganisation | [offers/subscriptions-offers-v2.2-reorganisee.md](offers/subscriptions-offers-v2.2-reorganisee.md) et [PDF de comparaison](offers/subscriptions-offers-v2.2-reorganisee.pdf) : copie structurelle, sans remplacement de la v2.2 annotee. |
 | Exemple d'API fourni | [offers/offers_list.json](offers/offers_list.json) : reponse reelle de offer/list, non equivalente a un contrat exhaustif. |
 | Base de connaissance produit | [offers/knowledge-base/PRODUCT.md](offers/knowledge-base/PRODUCT.md) : synthese des comportements cote equipement, contrats exposes, sources, exclusions et points ouverts. |
-| Sources API DALI | [PDF DPI API v2](offers/DPI-API%20V2-121126-175023.pdf) et [conversion MarkItDown](offers/knowledge-base/DPI-API-V2.markitdown.md). |
-| Source architecture DALI | [PDF SAG DALI lot 2](offers/ETDDPPS-SAG%20-%20P01558%20-%20DALI%20lot%202%20nPFS%20-%20offers%20v2%20%5BIN%20PROGRESS%5D-121126-175006.pdf) et [conversion MarkItDown](offers/knowledge-base/DALI-lot-2-nPFS-offers-v2.markitdown.md) : document indique IN PROGRESS, contexte non contractuel. |
+| Sources API DALI | [PDF DPI API v2](offers/archive/DPI-API%20V2-121126-175023.pdf) et [conversion MarkItDown](offers/knowledge-base/DPI-API-V2.markitdown.md). |
+| Source architecture DALI | [PDF SAG DALI lot 2](offers/archive/ETDDPPS-SAG%20-%20P01558%20-%20DALI%20lot%202%20nPFS%20-%20offers%20v2%20%5BIN%20PROGRESS%5D-121126-175006.pdf) et [conversion MarkItDown](offers/knowledge-base/DALI-lot-2-nPFS-offers-v2.markitdown.md) : document indique IN PROGRESS, contexte non contractuel. |
 | Source Word archivee | [offers/archive/6 - STBL- NPFS - DALI - Subscriptions Offers - v2.1.docx](offers/archive/6%20-%20STBL-%20NPFS%20-%20DALI%20-%20Subscriptions%20Offers%20-%20v2.1.docx). |
 | Illustrations | Repertoire `offers/assets/`, partage entre les versions. |
 | Export PDF | [offers/export.sh](offers/export.sh). |

@@ -114,7 +114,7 @@ Do not bring the following DALI implementation details into product requirements
 
 ## Source Files
 
-- [DPI API v2 PDF](../DPI-API%20V2-121126-175023.pdf) and [MarkItDown conversion](DPI-API-V2.markitdown.md)
-- [DALI lot 2 nPFS offers v2 PDF](../ETDDPPS-SAG%20-%20P01558%20-%20DALI%20lot%202%20nPFS%20-%20offers%20v2%20%5BIN%20PROGRESS%5D-121126-175006.pdf) and [MarkItDown conversion](DALI-lot-2-nPFS-offers-v2.markitdown.md)
+- [DPI API v2 PDF](../archive/DPI-API%20V2-121126-175023.pdf) and [MarkItDown conversion](DPI-API-V2.markitdown.md)
+- [DALI lot 2 nPFS offers v2 PDF](../archive/ETDDPPS-SAG%20-%20P01558%20-%20DALI%20lot%202%20nPFS%20-%20offers%20v2%20%5BIN%20PROGRESS%5D-121126-175006.pdf) and [MarkItDown conversion](DALI-lot-2-nPFS-offers-v2.markitdown.md)
 - [Observed offers/list response](../offers_list.json)
 - [Current product draft](../subscriptions-offers-v2.2-reorganisee.md)
