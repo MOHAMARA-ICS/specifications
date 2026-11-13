@@ -38,8 +38,10 @@ validee.
 | Reference validee | [offers/subscriptions-offers-v2.1.md](offers/subscriptions-offers-v2.1.md) et [PDF v2.1](offers/subscriptions-offers-v2.1.pdf) : a conserver inchanges. |
 | Version de travail | [offers/subscriptions-offers-v2.2.md](offers/subscriptions-offers-v2.2.md) et [PDF v2.2](offers/subscriptions-offers-v2.2.pdf). |
 | Brouillon de reorganisation | [offers/subscriptions-offers-v2.2-reorganisee.md](offers/subscriptions-offers-v2.2-reorganisee.md) et [PDF de comparaison](offers/subscriptions-offers-v2.2-reorganisee.pdf) : copie structurelle, sans remplacement de la v2.2 annotee. |
+| Version produit v2.3 | [offers/subscriptions-offers-v2.3.md](offers/subscriptions-offers-v2.3.md) et [PDF v2.3](offers/subscriptions-offers-v2.3.pdf) : basee sur la v2.2 reorganisee, sans les encadres de revue. |
 | Exemple d'API fourni | [offers/offers_list.json](offers/offers_list.json) : reponse reelle de offer/list, non equivalente a un contrat exhaustif. |
 | Base de connaissance produit | [offers/knowledge-base/PRODUCT.md](offers/knowledge-base/PRODUCT.md) : synthese des comportements cote equipement, contrats exposes, sources, exclusions et points ouverts. |
+| Swagger des offres | [offers/swagger_offer_v2.json](offers/swagger_offer_v2.json) : contrat OpenAPI 3.1 courant, reference pour chemins, headers, bodies, schemas et erreurs. |
 | Sources API DALI | [PDF DPI API v2](offers/archive/DPI-API%20V2-121126-175023.pdf) et [conversion MarkItDown](offers/knowledge-base/DPI-API-V2.markitdown.md). |
 | Source architecture DALI | [PDF SAG DALI lot 2](offers/archive/ETDDPPS-SAG%20-%20P01558%20-%20DALI%20lot%202%20nPFS%20-%20offers%20v2%20%5BIN%20PROGRESS%5D-121126-175006.pdf) et [conversion MarkItDown](offers/knowledge-base/DALI-lot-2-nPFS-offers-v2.markitdown.md) : document indique IN PROGRESS, contexte non contractuel. |
 | Source Word archivee | [offers/archive/6 - STBL- NPFS - DALI - Subscriptions Offers - v2.1.docx](offers/archive/6%20-%20STBL-%20NPFS%20-%20DALI%20-%20Subscriptions%20Offers%20-%20v2.1.docx). |
@@ -74,8 +76,9 @@ precisions sur TRANSIENT.
 - La recherche d'offres est hors perimetre.
 - Tout le contenu fonctionnel de la v2.1 est valide. Ne pas modifier une regle
   metier sur la base d'une supposition ou d'une incoherence apparente.
-- Le Swagger n'est pas disponible pour l'instant ; l'utilisateur pourra le
-  fournir plus tard.
+- Le Swagger courant des offres est archivé dans
+  [offers/swagger_offer_v2.json](offers/swagger_offer_v2.json) et sert de
+  référence pour les chemins, headers, bodies, modèles et réponses API.
 - Les ambiguites sont annotees dans la v2.2 avec des identifiants stables
   `CLAR-OFF-xxx`, puis traitees avec l'utilisateur une par une.
 - L'objectif de reorganisation est de clarifier, deplacer et dedupliquer les
@@ -199,25 +202,21 @@ d'autres donnees sensibles de cette reponse dans les comptes rendus.
 
 ## Points encore ouverts
 
-Les 10 annotations restent visibles dans la v2.2 ; CLAR-OFF-002 est maintenant
-confirmee et ses regles produit sont integrees. Neuf points conservent des
-suites ouvertes. CLAR-OFF-010 est
+Six annotations conservent des suites ouvertes ; CLAR-OFF-002, 004, 005 et 006
+sont resolues par les decisions produit et le Swagger. CLAR-OFF-010 est
 partiellement clarifiee par les decisions TRANSIENT ci-dessus.
 
 | Repere | Suite a donner |
 | --- | --- |
-| CLAR-OFF-003 | Strategie explicite par equipement pour pagination, recuperation complete, If-None-Match, 200/304, cache et rafraichissement force. |
-| CLAR-OFF-004 | Verification des chemins, casse, types et categories avec le Swagger. Exemples : commercial.commercialType declare Integer avec OPTION ; commercial.name declare Integer ; APPLICATION_NON_MANAGE versus UNMANAGED_APPLICATION. |
-| CLAR-OFF-005 | Role et disponibilite de activationLink/finalActivationLink, persistance, absence du cache et expiration ; tenir compte des liens effectivement presents dans list. |
-| CLAR-OFF-006 | Forme de la reponse de GET /api/offers/by-commercial-id/{commercialId} : objet ou collection, metadonnees de pagination, chemin du statut partenaire. |
-| CLAR-OFF-007 | Matrice des offres partenaires selon subscriptionType et statuts ; cas du type 3 non active, limite d'un appel toutes les 5 secondes et lien valable une heure. |
+| CLAR-OFF-003 | Decision produit : aucune pagination/filtre categorie cote device; omettre entitlementState, faire un seul List, ignorer links.next/compteurs, traiter data comme snapshot complet; conserver le cache sur 304, remplacer le snapshot sur 200, garder l'ancien ETag si aucun nouveau n'est renvoye, et laisser l'ETag inchange apres mutation jusqu'au prochain List planifie. Confirmer avec DALI que la reponse runtime contient toute la liste en un appel. |
+| CLAR-OFF-007 | Sens numerique des subscriptionType selon le Swagger ; limite d'un appel toutes les 5 secondes et lien valable une heure. La regle produit type 3 (activationLink, fallback partnerOfferApk) est confirmee. |
 | CLAR-OFF-008 | Principe confirme : les ecrans sont illustratifs et non contractuels ; le service est normatif. L'objectif de la specification a ete recentre sur le service. Reste a verifier avec le Swagger les chemins `commercial.promotion` versus `commercial.promotions[]` et la semantique de `limited_period`, `one_time` et `forever`. Ne pas deduire des maquettes des exigences de presentation. |
-| CLAR-OFF-009 | Reponse 409 decrite comme liste mais illustree par un objet additionalInfo.incompatibleOffers ; libelle compatible/incompatible ; confirmation, force=true et erreur de la seconde requete. |
+| CLAR-OFF-009 | Schema Swagger 409 incompatibleOffers[] racine integre ; confirmer payload runtime additionnel, libelle compatible/incompatible, et comportement si la requete force=true echoue. |
 | CLAR-OFF-010 | Cle de configuration effective, redemarrage pendant TRANSIENT, echec de rafraichissement ou droits absents apres expiration. Ne pas rouvrir les trois decisions deja confirmees. |
 | CLAR-OFF-011 | Consequences UI et cache en cas d'erreur, resultat incertain d'une action, conditions de relance et coherence avec l'ETag. Le document source contient aussi trois liens vers l'ancre OAuth `#_Oauth_errors_when`, dont la cible est absente. Le brouillon conserve ce probleme preexistant sans ajouter de nouveau lien casse. |
 
-Priorite de reprise : traiter les points encore ouverts avec l'utilisateur. Les
-points 004 et 006 peuvent attendre le Swagger.
+Priorite de reprise : traiter les points encore ouverts avec l'utilisateur.
+CLAR-OFF-004 et CLAR-OFF-006 ont ete fermees apres verification du Swagger.
 
 ## Brouillon de reorganisation
 

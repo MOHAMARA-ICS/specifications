@@ -7,8 +7,9 @@ Status: working knowledge base for the STB/device product specification. This is
 1. `subscriptions-offers-v2.1.md` is the validated product behavior baseline. Preserve its rules unless the user explicitly changes them.
 2. `DPI-API-V2.markitdown.md` is the MarkItDown extraction of `DPI-API V2-121126-175023.pdf`. It contains the detailed DALI v2 interface and response model, mixed with DALI implementation flow. Use its device-facing contract as a working reference; the current Swagger is authoritative for exact paths, verbs, schemas, and errors.
 3. `DALI-lot-2-nPFS-offers-v2.markitdown.md` is the extraction of `ETDDPPS-SAG - P01558 - DALI lot 2 nPFS - offers v2 [IN PROGRESS]-121126-175006.pdf`. The source is explicitly in progress and its document history says v0.1, May 2024. Use it for context and historical product requirements, not as the current API contract.
-4. `../offers_list.json` is one real list response containing 70 offers. It demonstrates possible payloads and status combinations, but is not exhaustive and does not define universal behavior.
-5. The current working product draft is `../subscriptions-offers-v2.2-reorganisee.md`. Screen layouts and UI illustrations are examples only; product requirements concern data, actions, and behavior.
+4. `../swagger_offer_v2.json` is the current OpenAPI 3.1 contract supplied by the user. It is authoritative for published operations, parameters, schemas, and documented responses, while any contradictions or omissions within it remain explicit open questions.
+5. `../offers_list.json` is one real list response containing 70 offers. It demonstrates possible payloads and status combinations, but is not exhaustive and does not define universal behavior.
+6. The current product draft is `../subscriptions-offers-v2.3.md`, based on `../subscriptions-offers-v2.2-reorganisee.md` with review annotations removed. Screen layouts and UI illustrations are examples only; product requirements concern data, actions, and behavior.
 
 The MarkItDown files are raw conversions. Their tables may be split or misaligned, and embedded diagrams are not reliably represented. Check the original PDFs or Swagger before relying on an ambiguous extraction.
 
@@ -37,7 +38,7 @@ The user confirmed that these fields describe distinct dimensions:
 
 - `commercial.subscriptionStatus` describes the state of the subscription process, not by itself whether the customer is subscribed. Values in the DALI v2 model include `ACTIVE`, `ACTIVATING`, `DEACTIVATING`, and `UNSPECIFIED`.
 - `entitlementState` indicates whether the offer is subscribed/entitled (`ENTITLED`) or not (`NOT_ENTITLED`).
-- `commercial.partner.status` indicates partner-account activation state. Creating a Disney+ subscription can leave partner activation pending until the customer creates or activates the partner account. The DALI mapping lists `ACTIVE`, `CANCELED`, `CREATED`, `INACTIVE`, `NON-EXISTENT`, and `UNSUBSCRIBED`.
+- `commercial.partner.status` indicates partner-account activation state. Creating a Disney+ subscription can leave partner activation pending until the customer creates or activates the partner account. Swagger lists `ACTIVE`, `CANCELED`, `CREATED`, `INACTIVE`, `NON_EXISTENT`, and `UNSUBSCRIBED`.
 
 The DALI v2 response model exposes the subscribe action when `entitlementState == NOT_ENTITLED` and the unsubscribe action when `entitlementState == ENTITLED`. The product should use the action links returned by the offer rather than synthesize DALI endpoints. The API specification gives these transition examples:
 
@@ -57,16 +58,17 @@ No fallback is defined for a missing status field; handling that case is out of 
 
 ## Device-Facing API Surface
 
-The device uses these DALI capabilities; use `actions` HATEOAS links from the offer response where provided:
+The OpenAPI 3.1 file `../swagger_offer_v2.json` is the current device-facing contract. Use the HATEOAS `actions` links returned by offers rather than constructing action URLs.
 
-- **List offers:** retrieve entitled and subscribable offer data and store/update it locally. The model supports category and entitlement filtering. The detailed v2 document describes optional `If-None-Match` and an ETag when pagination is not used. The existing product draft also has pagination parameters; the device strategy for pagination, ETag validation, and refresh remains open under CLAR-OFF-003.
-- **Get one offer:** retrieve an offer by commercial ID, including current partner status for activation flows. The exact response shape and contract need confirmation against the current Swagger (CLAR-OFF-006).
-- **Subscribe:** send the commercial offer ID, the purchase PIN in the required header, and the `force` flag. `force=false` is the normal first request. A successful response returns the updated offer and may return impacted offers.
-- **Unsubscribe:** send the commercial offer ID and purchase PIN. Use the returned updated offer to update local data without an immediate extra list request, as specified in the product flow.
+- **GET `/api/offers`:** the product sends no `categories` filter and omits `entitlementState` to retrieve all categories and both entitled/unentitled offers; `fields` is optional and `If-None-Match` is sent when an ETag is stored. A `200` response is `OfferItemList` (`data`, `totalElements`, `totalPages`, `currentPage`, `links`); `304` is also documented. Product decision: make one List request, treat `data` as the full snapshot, and do not process `links.next` or page counters. On `304`, keep local data; on `200`, replace the local snapshot. Update the stored ETag only when a response ETag is present; if absent, retain the previous value. After subscribe/unsubscribe, apply the mutation response locally and leave the ETag unchanged until the next scheduled List call. Confirm with DALI that its runtime response contains the full set in one call despite the Swagger page metadata.
+- **GET `/api/offers/by-commercial-id/{commercialId}`:** requires a commercial ID and returns `OfferItemList`, including the `data` array and pagination metadata. This resolves CLAR-OFF-006; consume the partner status from each item's `commercial.partner.status`.
+- **POST `/api/offers/subscribe`:** requires `x-purchase-code`; its JSON body requires `idCommercialOffer` and optionally accepts `force`. The product's normal first request uses `force=false`; the confirmed incompatibility flow retries with `force=true` only after user confirmation.
+- **POST `/api/offers/unsubscribe`:** requires `x-purchase-code`; the JSON body uses `idCommercialOffer`. The schema also declares `idOffer` but explicitly says it should not be used at the moment. The API returns `OfferItemList`.
+- **409 Subscribe response:** Swagger references `ApiErrorIncompatibleOffer`, whose declared schema contains a top-level `incompatibleOffers` string array. It does not declare common `error`, `errorDescription`, or `errorSource` fields; verify runtime payload details if the product depends on them.
 
-The two source documents disagree on some API surface details. The older SAG says `POST /api/offers/unsubscribe` and uses `entitlementState` values `SUBSCRIBABLE`, `SUBSCRIBED`, `ALL`; the detailed v2 model describes `DELETE` for unsubscription and `ENTITLED` / `NOT_ENTITLED` in the offer model. The real list sample also uses `ENTITLED` / `NOT_ENTITLED`. Confirm the current verb, parameter names, and query enums in Swagger; do not copy the in-progress SAG values into product requirements as current contract.
+Swagger documents `403` responses for Subscribe and Unsubscribe. The product draft now lists these statuses, but the user-facing handling remains open under CLAR-OFF-011. Read/list operations document `304` for conditional retrieval and common read errors; Subscribe additionally documents `409`.
 
-DALI's detailed API document describes a “Check Offer” operation with 204/304 responses but the MarkItDown extraction does not establish a product endpoint or complete device contract. Do not prescribe a device call to it until Swagger confirms it is product-facing.
+Swagger security offers Basic+Bearer for the public APIM gateway and API-key+mutual-TLS for private gateways. Each operation requires `x-kaltura-secret` and `x-kaltura-api-version`; APIM-specific DSI tokens are internal. Product credential provisioning for Basic/Bearer remains an integration detail. The Swagger does not define a “Check Offer” path even though the older DPI PDF describes one; do not add a device call without a published operation.
 
 ## Product Workflows
 
@@ -82,13 +84,15 @@ Subscribe and unsubscribe are protected by purchase-PIN validation. The first su
 
 ### Partner Activation
 
-The product draft uses subscription metadata and partner status to distinguish offers whose partner account still needs activation. For the established examples, Disney+ (`subscriptionType=2`) uses a QR/customer-portal flow, while Dorcel (`subscriptionType=3`) uses a partner-app/deep-link flow. The product consumes `finalActivationLink` returned by DALI; it should not reconstruct DALI activation URLs itself.
+The product draft uses subscription metadata and partner status to distinguish offers whose partner account still needs activation. For the established examples, Disney+ (`subscriptionType=2`) uses a QR/customer-portal flow, while Dorcel (`subscriptionType=3`) uses a partner-app/deep-link flow. For type 2, DALI continues to return `finalActivationLink` and the device uses it as the QR target. For type 3, it uses `activationLink` as the activation deeplink instead of `finalActivationLink`; if `activationLink` is missing or empty, it launches the application identified by `partnerOfferApk`. Do not reconstruct activation URLs on the device. While `TRANSIENT` is active, fluid partner activation—including opening the deeplink or launching the partner application—is disabled.
 
-The two new documents contain inconsistent descriptions/formulas for `subscriptionType` and `finalActivationLink`; see Open Questions. Keep the validated product examples, but do not generalize the numeric type meanings or link formula beyond confirmed rules.
+For Netflix highlighted-offer interception, the STB retrieves the offer by `ID` and checks `entitlementState`, `commercial.subscriptionStatus`, and `commercial.partner.status`. If not entitled, it displays the Intercept screen; selecting an offer opens its information page and ends the flow, while Sign in launches Netflix. If entitled and partner status is `ACTIVE`, it launches Netflix directly. If entitled and partner status is not `ACTIVE`, type 2 opens the information page and ends the flow; type 3 checks `offers.config.cooldown_for_fluid_partners`, launching Netflix only when the cooldown expires and otherwise opening the information page and ending the flow. After launch, the app flow adapts to `GetAccountInfo()`.
+
+The two source documents contain inconsistent descriptions of the numeric `subscriptionType` meanings; see CLAR-OFF-007. Follow the product-confirmed activation behavior above and do not reconstruct DALI activation URLs on the device.
 
 ### TRANSIENT
 
-`TRANSIENT` is a product-local state, not a DALI status. Subscription starts the timer; the default duration is 120 seconds; the product exits this state at expiry. Expiry alone does not prove that backend processing or entitlement propagation has completed. Existing playback and offer-info-sheet behavior during TRANSIENT remains in the validated product draft. Restart behavior, refresh failure, and still-missing entitlement after expiry remain open under CLAR-OFF-010.
+`TRANSIENT` is a product-local state, not a DALI status. Subscription starts the timer; defaults are `cooldown_in_seconds=120`, `cooldown_for_fluid_partners=30`, and `cooldown_for_non_fluid_partners=0` seconds. The product exits this state when the applicable cooldown expires. Partner activation is disabled while `TRANSIENT` is active. Expiry alone does not prove that backend processing or entitlement propagation has completed. Existing playback and offer-info-sheet behavior during TRANSIENT remains in the validated product draft. Restart behavior, refresh failure, and still-missing entitlement after expiry remain open under CLAR-OFF-010.
 
 ## Exclude from Product Requirements
 
@@ -102,15 +106,13 @@ Do not bring the following DALI implementation details into product requirements
 
 ## Open Questions and Source Conflicts
 
-1. **CLAR-OFF-003:** settle pagination versus ETag use, treatment of 200/304, local updates, and refresh after mutations.
-2. **CLAR-OFF-004:** validate field names, casing, enum values, and category handling with the current Swagger. The MarkItDown extraction and old diagrams have table/numbering defects.
-3. **CLAR-OFF-005:** `finalActivationLink` timing conflicts: the product text says it is supplied after subscribe and should be cached; DPI v2 describes building it in get/list formatting for some cases, and the shared real list JSON includes it. Confirm the current contract and product cache behavior.
-4. **CLAR-OFF-006:** confirm the exact shape of Get-by-commercial-ID response.
-5. **CLAR-OFF-007:** reconcile `subscriptionType` meanings and partner activation matrix. DPI v2 model text calls type 2 fluent/type 3 non-fluent, while its processing comments and both product/older SAG examples associate Disney+ QR with 2 and Dorcel app/deep link with 3. The sample also contains `subscriptionType=0`; do not infer its behavior.
-6. **CLAR-OFF-009:** confirm the exact 409 response schema and behavior after a failed forced retry.
-7. **CLAR-OFF-010:** clarify timer configuration key, restart during TRANSIENT, refresh failure, and no entitlement after expiry.
-8. **CLAR-OFF-011:** define product-visible outcomes and recovery for uncertain mutation results and DALI unavailability, without inventing retries.
-9. **AIBO:** the diagram includes “Apps offers” and “Apps offers status” on the user's direction that DALI calls AIBO. Neither converted source defines those operations. The existing product text says partner activation status is obtained from DALI's Get Offer response, not from a dedicated AIBO status API. Keep the AIBO labels architectural and non-normative until an interface contract is provided.
+1. **CLAR-OFF-003:** device policy is decided: no category/entitlement filters, one List call, ignore `links.next` and page counters, treat `data` as a full snapshot, keep the old ETag if 200 omits one, and refresh after mutations on the next scheduled List. Confirm with DALI that the runtime response is complete in one call.
+2. **CLAR-OFF-007:** reconcile `subscriptionType` numeric meanings and expiry behavior. The schema describes type 2 as fluent/type 3 as non-fluent, while the validated product examples associate Disney+ QR with 2 and Dorcel app/deep link with 3. The sample also contains `subscriptionType=0`; do not infer its behavior.
+3. **CLAR-OFF-009:** the product example now matches the Swagger's top-level `incompatibleOffers[]`; confirm any additional runtime error fields and how the product handles failure of the forced retry.
+4. **CLAR-OFF-010:** clarify timer configuration key, restart during TRANSIENT, refresh failure, and no entitlement after expiry.
+5. **CLAR-OFF-011:** define product-visible outcomes and recovery for uncertain mutation results and DALI unavailability, without inventing retries.
+6. **APIM security:** Swagger requires Basic+Bearer for the public gateway, but the product header table previously represented the Bearer token only. Confirm which component supplies each credential.
+7. **AIBO:** the diagram includes “Apps offers” and “Apps offers status” on the user's direction that DALI calls AIBO. Neither the Swagger nor converted PDFs define those operations. The current product text says partner activation status comes from DALI's Get Offer response, not a dedicated AIBO status API. Keep AIBO labels architectural and non-normative until an interface contract is provided.
 
 ## Source Files
 

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 1200px; height: 1100px; background: #fff; }
+svg { display: block; width: 1200px; height: 1100px; font-family: Arial, sans-serif; }
+.title { fill: #202a35; font-size: 30px; font-weight: 700; }
+.section { fill: #536273; font-size: 17px; font-weight: 700; }
+.box { stroke-width: 2; rx: 12; }
+.neutral { fill: #f2f4f7; stroke: #9aa3ad; }
+.decision { fill: #fff2d6; stroke: #c49337; stroke-width: 2.5; }
+.action { fill: #eaf1fb; stroke: #6684b1; }
+.result { fill: #e5f4e9; stroke: #5a956d; }
+.name { fill: #1b2530; font-size: 19px; font-weight: 700; text-anchor: middle; }
+.value { fill: #344456; font-size: 16px; text-anchor: middle; }
+.edge { fill: none; stroke: #536273; stroke-width: 3; marker-end: url(#arrow); }
+.edge-label { fill: #344456; font-size: 15px; font-weight: 600; text-anchor: middle; paint-order: stroke; stroke: #fff; stroke-width: 6px; stroke-linejoin: round; }
+.note { fill: #344456; font-size: 16px; text-anchor: middle; }
+</style>
+</head>
+<body>
+<svg viewBox="0 0 1200 1100" role="img" aria-label="Offer interception flow based on entitlement, partner status, subscription type, and fluid-partner cooldown.">
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#536273"/></marker>
+</defs>
+<text class="title" x="42" y="48">Offer interception and routing</text>
+
+<rect class="box neutral" x="450" y="75" width="300" height="64"/>
+<text class="name" x="600" y="114">Featured offer selected</text>
+<rect class="box action" x="450" y="171" width="300" height="64"/>
+<text class="name" x="600" y="210">Retrieve offer by ID</text>
+<path class="edge" d="M600 139 V171"/>
+
+<path class="decision" d="M600 255 L705 315 L600 375 L495 315 Z"/>
+<text class="name" x="600" y="309">entitlementState</text>
+<text class="value" x="600" y="332">?</text>
+<path class="edge" d="M600 235 V255"/>
+<text class="edge-label" x="405" y="394">NOT_ENTITLED</text>
+<text class="edge-label" x="800" y="394">ENTITLED</text>
+<path class="edge" d="M495 315 H300 V420"/>
+<path class="edge" d="M705 315 H900 V420"/>
+
+<rect class="box action" x="50" y="435" width="500" height="70"/>
+<text class="name" x="300" y="466">Display Intercept screen</text>
+<text class="value" x="300" y="489">Choose an offer or sign in</text>
+<path class="decision" d="M300 530 L390 580 L300 630 L210 580 Z"/>
+<text class="name" x="300" y="586">User action?</text>
+<path class="edge" d="M300 505 V530"/>
+<path class="edge" d="M210 580 H155 V660"/>
+<text class="edge-label" x="142" y="645">Select an offer</text>
+<path class="edge" d="M390 580 H445 V660"/>
+<text class="edge-label" x="485" y="645">Sign in</text>
+<rect class="box result" x="55" y="660" width="200" height="82"/>
+<text class="name" x="155" y="692">Offer information</text>
+<text class="value" x="155" y="717">page · END FLOW</text>
+<rect class="box action" x="345" y="660" width="200" height="82"/>
+<text class="name" x="445" y="692">Launch partner app</text>
+<text class="value" x="445" y="717">Continue to app flow</text>
+
+<path class="decision" d="M900 420 L1010 480 L900 540 L790 480 Z"/>
+<text class="name" x="900" y="475">Partner status</text>
+<text class="value" x="900" y="499">ACTIVE?</text>
+<path class="edge" d="M1010 480 H1090 V610"/>
+<text class="edge-label" x="1070" y="563">Yes</text>
+<path class="edge" d="M790 480 H690 V600"/>
+<text class="edge-label" x="720" y="563">No</text>
+<rect class="box action" x="990" y="610" width="190" height="82"/>
+<text class="name" x="1085" y="642">Launch partner app</text>
+<text class="value" x="1085" y="667">Partner ACTIVE</text>
+
+<path class="decision" d="M690 600 L790 655 L690 710 L590 655 Z"/>
+<text class="name" x="690" y="651">subscriptionType</text>
+<text class="value" x="690" y="675">?</text>
+<path class="edge" d="M590 655 H555 V760"/>
+<text class="edge-label" x="605" y="738">Type 2</text>
+<path class="edge" d="M790 655 H900 V745"/>
+<text class="edge-label" x="850" y="638">Type 3</text>
+<rect class="box result" x="455" y="760" width="200" height="82"/>
+<text class="name" x="555" y="792">Offer information</text>
+<text class="value" x="555" y="817">page · END FLOW</text>
+
+<path class="decision" d="M900 745 L1010 805 L900 865 L790 805 Z"/>
+<text class="name" x="900" y="799">Fluid-partner</text>
+<text class="value" x="900" y="823">cooldown expired?</text>
+<path class="edge" d="M1010 805 H1090 V900"/>
+<text class="edge-label" x="1068" y="880">Yes</text>
+<path class="edge" d="M790 805 H700 V900"/>
+<text class="edge-label" x="742" y="788">No</text>
+<rect class="box action" x="990" y="900" width="190" height="82"/>
+<text class="name" x="1085" y="932">Launch partner app</text>
+<text class="value" x="1085" y="957">Cooldown expired</text>
+<rect class="box result" x="455" y="900" width="245" height="82"/>
+<text class="name" x="577" y="932">Offer information page</text>
+<text class="value" x="577" y="957">END FLOW</text>
+
+<text class="note" x="600" y="1040">After launch, adapt the partner-app journey to GetAccountInfo().</text>
+</svg>
+</body>
+</html>

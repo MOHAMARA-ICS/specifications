@@ -1,0 +1,2589 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "description": " ### Global requirements:\n- Use JSON (UTF-8)\n- Consumers should be open for extensions:\n  - they should ignore new JSON fields\n  - when possible, they should allow new values in enumerated fields\n    - Headers:\n        - Standard headers:\n            - `Content-Type` is required when a request body is provided, and optional when not. `application/json` is the only supported value\n        -  Traceability headers should be passed :\n            - `X-Request-Id`: unique request ID (eg. UUID)\n            - `X-Action-Id`: unique request ID (eg. UUID). For synchronous ops only\n            - `X-Message-Id`: unique message ID (to reuse in case of retry)\n            - `X-Process`: human readable action name\n            - `X-Source`: client name with pattern `<systemName>.<appName>`\n        - Both server and client must simply ignore extra headers\n\n ### Cross-Origin Resource Sharing:\n This API features Cross-Origin Resource Sharing (CORS) implemented in compliance with  [W3C spec](https://www.w3.org/TR/cors/).\n And that allows cross-domain communication from the browser.\n All responses have a wildcard same-origin which makes them completely public and accessible to everyone, including any code on any site.\n\n ### Acces :\n the access to the API depend on the type of caller:\n - In the case of a **PFM backend (APIM,...)** , access is made on __the private apiGateway of DALi system__ and secured using the __API key and mutual TLS__.\n - In the case of a __fontend (Devices: STB,APP Mobile,TV,...)__ , access is made on __the APIM apiGateway__ and secured using a __basic Authentifcation and a Bearer Token__.\n",
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://springdoc.org"
+    },
+    "title": "DALI Offer Management API"
+  },
+  "externalDocs": {
+    "description": "SpringShop Wiki Documentation",
+    "url": "https://springshop.wiki.github.org/docs"
+  },
+  "servers": [
+    {
+      "description": "PROD - Public ApiGateway {APIM}",
+      "url": "https://bt-api-int.bouyguestelecom.fr"
+    },
+    {
+      "description": "TB2 - Public ApiGateway {APIM}",
+      "url": "https://bt-api-int.tb2.bouyguestelecom.fr"
+    },
+    {
+      "description": "TB3 - Public ApiGateway {APIM}",
+      "url": "https://bt-api-int.tb3.bouyguestelecom.fr"
+    },
+    {
+      "description": "TB1 - Private ApiGateway DALI",
+      "url": "https://tb1-api-int-services.hprod.dali.dpps.pub.nbyt.fr"
+    },
+    {
+      "description": "TB2 - Private ApiGateway DALI",
+      "url": "https://tb2-api-int-services.hprod.dali.dpps.pub.nbyt.fr"
+    },
+    {
+      "description": "TB3 - Private ApiGateway DALI",
+      "url": "https://tb3-api-int-services.hprod.dali.dpps.pub.nbyt.fr"
+    },
+    {
+      "description": "Private ApiGateway DALI {PROD}",
+      "url": "https://api-int-services.dali.dpps.pub.nbyt.fr"
+    }
+  ],
+  "security": [
+    {
+      "basicAuthorization": [],
+      "bearAuthorization": []
+    },
+    {
+      "apiKeyScheme": [],
+      "mutualTLS": []
+    }
+  ],
+  "tags": [
+    {
+      "description": "### User functionality\nThe Offer Management Service exposes its API for realizing the following tasks:\n - Gets properties.\n - subscribe offer.\n - unsubscribe offer.\n ### Changelog :\n  - 1.0.0: \n      - `Add API Offer Management`\n  - 1.1.0: \n    - `Header x-kaltura-secret removed`\n    - `HTTP CODE 304 removed from GET`\n      - `New errors added on Unsubscribe / Subscribe methods`\n    - `Unsubscribe / Subscribe methods signatures modification`\n    - `Offer model :`\n      - `Fields cardinality update`\n      - `Fields description update`\n      - `liveShop.lcn field type changed to integer`\n      - `commercial.type field removed`\n      - `image.type field added`\n      - `image.aspectRatio field type changed to double`\n      - `shortName field renamed to shortTitle`\n      - `longName field renamed to longTitle`\n      - `actions removed in list return (no possible action at list level)`\n  - 2.0.0: \n      - `Available if X-version header is set to 2`\n      - `OfferItem: new category UNMANAGED_APPLICATION`\n      - `ApplicationOfferItem: new attributes commercialOffer, subscriptionType, activationLink, infoPageTemplate and hide`\n      - `MultiOfferItem: new attribute commercialOffer`\n      - `UnmanagedApplicationOfferItem: new offer item (available only in the list operation)`\n      - `List operation: query parameter category is replaced by categories`\n      - `CommercialOfferSubscribe: new attribute partner`\n  - 2.1.0: \n      - `CommercialType: new commercial type PARTNER_SERVICE`\n      - `ApplicationOfferItem: new attribute finalActivationLink`\n      - `Partner: id field changes from mandatory to optional`\n      - `Partner: status field changes from optional to mandatory`\n      - `OfferItem: Fields (subscriptionType, activationLink) description update`\n      - `OfferItemModel: Fields (actions, links.self) description update`\n      - `New error added: HTTP CODE 400 ENTITLEMENTSTATE_MISMATCH on a GET list`\n  - 2.2.0: \n      - `OfferItem: remove attributes longTitle and longDescription`\n      - `OfferItem: new attribute shortName`\n      - `ApplicationOfferItem: Change the type of subscriptionType from double to integer`\n      - `OfferItemModel: Update description of the field links.self`\n      - `OfferItemModel: Remove the field links.offer`\n      - `Change the return of get and unsubscribe to a list of offerItem`\n  - 2.3.0: \n    - `Optional header x-user-agent added on all operations`\n    - `PriceLabel fields added in CommercialOffer`\n    - `CustomPromoLabel added in PromotionCustom`\n",
+      "name": "Offer Management V2"
+    }
+  ],
+  "paths": {
+    "/api/offers": {
+      "get": {
+        "description": "Gets all Offers for a User",
+        "operationId": "list",
+        "parameters": [
+          {
+            "description": "Header containing Kaltura Secret : x-kaltura-secret",
+            "in": "header",
+            "name": "x-kaltura-secret",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Header containing the api version : x-kaltura-api-version",
+            "in": "header",
+            "name": "x-kaltura-api-version",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Contract ID, required for BE, APIM...",
+            "in": "header",
+            "name": "X-Dpps-Trace-idcontracts",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "PfsNoCompte",
+            "in": "header",
+            "name": "x-Dpps-Trace-pfsnocompte",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Request identifier on the IS (unique identifier generated during the call to each resource if not present at the input and provided to each service called synchronously)",
+            "in": "header",
+            "name": "x-request-id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Name of the sender of the request",
+            "in": "header",
+            "name": "x-source",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Unique for each interaction between ST (it can be used to manage anti-replay on power supplies for example)",
+            "in": "header",
+            "name": "x-message-id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "API Version",
+            "in": "header",
+            "name": "x-version",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "If-None-Match",
+            "in": "header",
+            "name": "If-None-Match",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "DSI Basic Access Token, required for BE, APIM...",
+            "in": "header",
+            "name": "x-dsi-atk-basic",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Identifier of the caller",
+            "in": "header",
+            "name": "X-User-Agent",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Used to filter unimportant information from the response. <field_or_object> can be any of the following:\n\nSimple top-level field\n\nTop-level object that includes all fields\n\nTop-level object with selected fields\n\nNested objects\n\nSeparate each field or object with a comma : ?fields=<field1_or_object1>,<field2_or_object2>",
+            "in": "query",
+            "name": "fields",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Offer item categories",
+            "in": "query",
+            "name": "categories",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "BOUQUET",
+                  "APPLICATION",
+                  "SERVICE",
+                  "MULTIOFFER",
+                  "UNMANAGED_APPLICATION"
+                ]
+              }
+            }
+          },
+          {
+            "description": "Entitlement state",
+            "in": "query",
+            "name": "entitlementState",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ENTITLED",
+                "NOT_ENTITLED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferItemList"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "description": "Entity tag for current customer offers list, returned Only if pagination not used",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "304": {
+            "content": {
+              "application/json": {}
+            },
+            "description": "Not Modified",
+            "headers": {
+              "ETag": {
+                "description": "Entity tag for current customer offers list, returned Only if pagination not used",
+                "schema": {
+                  "type": "string"
+                },
+                "style": "simple"
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Bad Request": {
+                    "description": "Attribute missing or incorrect",
+                    "value": {
+                      "error": "Bad Request",
+                      "errorDescription": "Invalid format",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "Possible `error` values:\n              - `Bad Request`\n"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Expired Token": {
+                    "description": "Token has expired",
+                    "value": {
+                      "error": "Expired Token",
+                      "errorDescription": "Token is expired",
+                      "errorSource": "string"
+                    }
+                  },
+                  "Invalid Token": {
+                    "description": "Token is invalid",
+                    "value": {
+                      "error": "Invalid Token",
+                      "errorDescription": "Token is invalid",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "Invalid Token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Customer Not Found": {
+                    "description": "Customer is not found",
+                    "value": {
+                      "error": "Customer Not Found",
+                      "errorDescription": "Customer wasn't found",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Method Not Allowed": {
+                    "description": "This method is not allowed",
+                    "value": {
+                      "error": "Method Not Allowed",
+                      "errorDescription": "This HTTP Method is not available on this service ",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Too Many Requests": {
+                    "description": "Too Many Requests",
+                    "value": {
+                      "error": "Too Many Requests",
+                      "errorDescription": "Maximum number of requests is reached",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Internal Server Error": {
+                    "description": "Internal server error",
+                    "value": {
+                      "error": "Internal Server Error",
+                      "errorDescription": "Internal server error",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "External Server Error": {
+                    "description": "External server error",
+                    "value": {
+                      "error": "External Server Error",
+                      "errorDescription": "External server error",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "External Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Internal Server Error": {
+                    "description": "Internal server error",
+                    "value": {
+                      "error": "Internal Server Error",
+                      "errorDescription": "Internal server error",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "tags": [
+          "Offer Management V2"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "source": "curl --request GET \\\n  --url 'https://bt-api-int.bouyguestelecom.fr/api/offers?fields=SOME_ARRAY_VALUE&categories=SOME_ARRAY_VALUE&entitlementState=SOME_STRING_VALUE' \\\n  --header 'Authorization: Basic REPLACE_BASIC_AUTH' \\\n  --header 'If-None-Match: SOME_STRING_VALUE' \\\n  --header 'X-Dpps-Trace-idcontracts: SOME_STRING_VALUE' \\\n  --header 'X-User-Agent: SOME_STRING_VALUE' \\\n  --header 'x-Dpps-Trace-pfsnocompte: SOME_STRING_VALUE' \\\n  --header 'x-dsi-atk-basic: SOME_STRING_VALUE' \\\n  --header 'x-kaltura-api-version: SOME_STRING_VALUE' \\\n  --header 'x-kaltura-secret: SOME_STRING_VALUE' \\\n  --header 'x-message-id: SOME_STRING_VALUE' \\\n  --header 'x-request-id: SOME_STRING_VALUE' \\\n  --header 'x-source: SOME_STRING_VALUE' \\\n  --header 'x-version: SOME_STRING_VALUE'"
+          },
+          {
+            "lang": "Node",
+            "source": "const fetch = require('node-fetch');\n\nlet url = 'https://bt-api-int.bouyguestelecom.fr/api/offers?fields=SOME_ARRAY_VALUE&categories=SOME_ARRAY_VALUE&entitlementState=SOME_STRING_VALUE';\n\nlet options = {\n  method: 'GET',\n  headers: {\n    'x-kaltura-secret': 'SOME_STRING_VALUE',\n    'x-kaltura-api-version': 'SOME_STRING_VALUE',\n    'X-Dpps-Trace-idcontracts': 'SOME_STRING_VALUE',\n    'x-Dpps-Trace-pfsnocompte': 'SOME_STRING_VALUE',\n    'x-request-id': 'SOME_STRING_VALUE',\n    'x-source': 'SOME_STRING_VALUE',\n    'x-message-id': 'SOME_STRING_VALUE',\n    'x-version': 'SOME_STRING_VALUE',\n    'If-None-Match': 'SOME_STRING_VALUE',\n    'x-dsi-atk-basic': 'SOME_STRING_VALUE',\n    'X-User-Agent': 'SOME_STRING_VALUE',\n    Authorization: 'Basic REPLACE_BASIC_AUTH'\n  }\n};\n\nfetch(url, options)\n  .then(res => res.json())\n  .then(json => console.log(json))\n  .catch(err => console.error('error:' + err));"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\n\nurl = \"https://bt-api-int.bouyguestelecom.fr/api/offers\"\n\nquerystring = {\"fields\":\"SOME_ARRAY_VALUE\",\"categories\":\"SOME_ARRAY_VALUE\",\"entitlementState\":\"SOME_STRING_VALUE\"}\n\nheaders = {\n    \"x-kaltura-secret\": \"SOME_STRING_VALUE\",\n    \"x-kaltura-api-version\": \"SOME_STRING_VALUE\",\n    \"X-Dpps-Trace-idcontracts\": \"SOME_STRING_VALUE\",\n    \"x-Dpps-Trace-pfsnocompte\": \"SOME_STRING_VALUE\",\n    \"x-request-id\": \"SOME_STRING_VALUE\",\n    \"x-source\": \"SOME_STRING_VALUE\",\n    \"x-message-id\": \"SOME_STRING_VALUE\",\n    \"x-version\": \"SOME_STRING_VALUE\",\n    \"If-None-Match\": \"SOME_STRING_VALUE\",\n    \"x-dsi-atk-basic\": \"SOME_STRING_VALUE\",\n    \"X-User-Agent\": \"SOME_STRING_VALUE\",\n    \"Authorization\": \"Basic REPLACE_BASIC_AUTH\"\n}\n\nresponse = requests.request(\"GET\", url, headers=headers, params=querystring)\n\nprint(response.text)"
+          }
+        ]
+      }
+    },
+    "/api/offers/by-commercial-id/{commercialId}": {
+      "get": {
+        "description": "Gets Offer by commercialId for a User",
+        "operationId": "get",
+        "parameters": [
+          {
+            "description": "Header containing Kaltura Secret : x-kaltura-secret",
+            "in": "header",
+            "name": "x-kaltura-secret",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Header containing the api version : x-kaltura-api-version",
+            "in": "header",
+            "name": "x-kaltura-api-version",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Contract ID, required for BE, APIM...",
+            "in": "header",
+            "name": "X-Dpps-Trace-idcontracts",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "PfsNoCompte",
+            "in": "header",
+            "name": "x-Dpps-Trace-pfsnocompte",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "DSI Basic Access Token, required for BE, APIM...",
+            "in": "header",
+            "name": "x-dsi-atk-basic",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Request identifier on the IS (unique identifier generated during the call to each resource if not present at the input and provided to each service called synchronously)",
+            "in": "header",
+            "name": "x-request-id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Name of the sender of the request",
+            "in": "header",
+            "name": "x-source",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Unique for each interaction between ST (it can be used to manage anti-replay on power supplies for example)",
+            "in": "header",
+            "name": "x-message-id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "API Version",
+            "in": "header",
+            "name": "x-version",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Identifier of the caller",
+            "in": "header",
+            "name": "X-User-Agent",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Offer id",
+            "in": "path",
+            "name": "commercialId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Used to filter unimportant information from the response. <field_or_object> can be any of the following:\n\nSimple top-level field\n\nTop-level object that includes all fields\n\nTop-level object with selected fields\n\nNested objects\n\nSeparate each field or object with a comma : ?fields=<field1_or_object1>,<field2_or_object2>",
+            "in": "query",
+            "name": "fields",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferItemList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Bad Request": {
+                    "description": "Attribute missing or incorrect",
+                    "value": {
+                      "error": "Bad Request",
+                      "errorDescription": "Invalid format",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Expired Token": {
+                    "description": "Token has expired",
+                    "value": {
+                      "error": "Expired Token",
+                      "errorDescription": "Token is expired",
+                      "errorSource": "string"
+                    }
+                  },
+                  "Invalid Token": {
+                    "description": "Token is invalid",
+                    "value": {
+                      "error": "Invalid Token",
+                      "errorDescription": "Token is invalid",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "Invalid Token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Customer Not Found": {
+                    "description": "Customer is not found",
+                    "value": {
+                      "error": "Customer Not Found",
+                      "errorDescription": "Customer wasn't found",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Method Not Allowed": {
+                    "description": "This method is not allowed",
+                    "value": {
+                      "error": "Method Not Allowed",
+                      "errorDescription": "This HTTP Method is not available on this service ",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Too Many Requests": {
+                    "description": "Too Many Requests",
+                    "value": {
+                      "error": "Too Many Requests",
+                      "errorDescription": "Maximum number of requests is reached",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Internal Server Error": {
+                    "description": "Internal server error",
+                    "value": {
+                      "error": "Internal Server Error",
+                      "errorDescription": "Internal server error",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "External Server Error": {
+                    "description": "External server error",
+                    "value": {
+                      "error": "External Server Error",
+                      "errorDescription": "External server error",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "External Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Internal Server Error": {
+                    "description": "Internal server error",
+                    "value": {
+                      "error": "Internal Server Error",
+                      "errorDescription": "Internal server error",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferRead"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "tags": [
+          "Offer Management V2"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "source": "curl --request GET \\\n  --url 'https://bt-api-int.bouyguestelecom.fr/api/offers/by-commercial-id/%7BcommercialId%7D?fields=SOME_ARRAY_VALUE' \\\n  --header 'Authorization: Basic REPLACE_BASIC_AUTH' \\\n  --header 'X-Dpps-Trace-idcontracts: SOME_STRING_VALUE' \\\n  --header 'X-User-Agent: SOME_STRING_VALUE' \\\n  --header 'x-Dpps-Trace-pfsnocompte: SOME_STRING_VALUE' \\\n  --header 'x-dsi-atk-basic: SOME_STRING_VALUE' \\\n  --header 'x-kaltura-api-version: SOME_STRING_VALUE' \\\n  --header 'x-kaltura-secret: SOME_STRING_VALUE' \\\n  --header 'x-message-id: SOME_STRING_VALUE' \\\n  --header 'x-request-id: SOME_STRING_VALUE' \\\n  --header 'x-source: SOME_STRING_VALUE' \\\n  --header 'x-version: SOME_STRING_VALUE'"
+          },
+          {
+            "lang": "Node",
+            "source": "const fetch = require('node-fetch');\n\nlet url = 'https://bt-api-int.bouyguestelecom.fr/api/offers/by-commercial-id/%7BcommercialId%7D?fields=SOME_ARRAY_VALUE';\n\nlet options = {\n  method: 'GET',\n  headers: {\n    'x-kaltura-secret': 'SOME_STRING_VALUE',\n    'x-kaltura-api-version': 'SOME_STRING_VALUE',\n    'X-Dpps-Trace-idcontracts': 'SOME_STRING_VALUE',\n    'x-Dpps-Trace-pfsnocompte': 'SOME_STRING_VALUE',\n    'x-dsi-atk-basic': 'SOME_STRING_VALUE',\n    'x-request-id': 'SOME_STRING_VALUE',\n    'x-source': 'SOME_STRING_VALUE',\n    'x-message-id': 'SOME_STRING_VALUE',\n    'x-version': 'SOME_STRING_VALUE',\n    'X-User-Agent': 'SOME_STRING_VALUE',\n    Authorization: 'Basic REPLACE_BASIC_AUTH'\n  }\n};\n\nfetch(url, options)\n  .then(res => res.json())\n  .then(json => console.log(json))\n  .catch(err => console.error('error:' + err));"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\n\nurl = \"https://bt-api-int.bouyguestelecom.fr/api/offers/by-commercial-id/%7BcommercialId%7D\"\n\nquerystring = {\"fields\":\"SOME_ARRAY_VALUE\"}\n\nheaders = {\n    \"x-kaltura-secret\": \"SOME_STRING_VALUE\",\n    \"x-kaltura-api-version\": \"SOME_STRING_VALUE\",\n    \"X-Dpps-Trace-idcontracts\": \"SOME_STRING_VALUE\",\n    \"x-Dpps-Trace-pfsnocompte\": \"SOME_STRING_VALUE\",\n    \"x-dsi-atk-basic\": \"SOME_STRING_VALUE\",\n    \"x-request-id\": \"SOME_STRING_VALUE\",\n    \"x-source\": \"SOME_STRING_VALUE\",\n    \"x-message-id\": \"SOME_STRING_VALUE\",\n    \"x-version\": \"SOME_STRING_VALUE\",\n    \"X-User-Agent\": \"SOME_STRING_VALUE\",\n    \"Authorization\": \"Basic REPLACE_BASIC_AUTH\"\n}\n\nresponse = requests.request(\"GET\", url, headers=headers, params=querystring)\n\nprint(response.text)"
+          }
+        ]
+      }
+    },
+    "/api/offers/subscribe": {
+      "post": {
+        "operationId": "subscribe",
+        "parameters": [
+          {
+            "description": "Header containing Kaltura Secret : x-kaltura-secret",
+            "in": "header",
+            "name": "x-kaltura-secret",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Header containing the api version : x-kaltura-api-version",
+            "in": "header",
+            "name": "x-kaltura-api-version",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Contract ID, required for BE, APIM...",
+            "in": "header",
+            "name": "X-Dpps-Trace-idcontracts",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "PfsNoCompte",
+            "in": "header",
+            "name": "x-Dpps-Trace-pfsnocompte",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "DSI Moderate Access Token, required for BE, APIM...",
+            "in": "header",
+            "name": "x-dsi-atk-moderate",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Purchase code",
+            "in": "header",
+            "name": "x-purchase-code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Request identifier on the IS (unique identifier generated during the call to each resource if not present at the input and provided to each service called synchronously)",
+            "in": "header",
+            "name": "x-request-id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Name of the sender of the request",
+            "in": "header",
+            "name": "x-source",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Unique for each interaction between ST (it can be used to manage anti-replay on power supplies for example)",
+            "in": "header",
+            "name": "x-message-id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "API Version",
+            "in": "header",
+            "name": "x-version",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Identifier of the caller",
+            "in": "header",
+            "name": "X-User-Agent",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscribeBodyDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferItemList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Bad Request": {
+                    "description": "Attribute missing or incorrect",
+                    "value": {
+                      "error": "Bad Request",
+                      "errorDescription": "Invalid format",
+                      "errorSource": "string"
+                    }
+                  },
+                  "Invalid Offer": {
+                    "description": "This offer is invalid",
+                    "value": {
+                      "error": "Invalid Offer",
+                      "errorDescription": "This offer is invalid",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferSubscribe"
+                }
+              }
+            },
+            "description": "Possible `error` values:\n              - `Bad Request`\n              - `Invalid Offer`\n"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Expired Token": {
+                    "description": "Token has expired",
+                    "value": {
+                      "error": "Expired Token",
+                      "errorDescription": "Token is expired",
+                      "errorSource": "string"
+                    }
+                  },
+                  "Invalid Token": {
+                    "description": "Token is invalid",
+                    "value": {
+                      "error": "Invalid Token",
+                      "errorDescription": "Token is invalid",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferSubscribe"
+                }
+              }
+            },
+            "description": "Invalid Token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Customer Suspended": {
+                    "description": "Customer Suspended",
+                    "value": {
+                      "error": "Customer Suspended",
+                      "errorDescription": "Unable to perform this action due to a household suspension",
+                      "errorSource": "string"
+                    }
+                  },
+                  "Unable Purchase Free": {
+                    "description": "The product you are trying to purchase is free",
+                    "value": {
+                      "error": "Unable Purchase Free",
+                      "errorDescription": "The product you are trying to purchase is free",
+                      "errorSource": "string"
+                    }
+                  },
+                  "Unable Purchase Offer Purchased": {
+                    "description": "This Offer was already purchased by this household",
+                    "value": {
+                      "error": "Unable Purchase Offer Purchased",
+                      "errorDescription": "This Offer was already purchased by this household",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferSubscribe"
+                }
+              }
+            },
+            "description": "Possible `error` values:\n              - `Customer Suspended`\n              - `Unable Purchase Free`\n              - `Unable Purchase Offer Purchased`\n"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Customer Not Found": {
+                    "description": "Customer is not found",
+                    "value": {
+                      "error": "Customer Not Found",
+                      "errorDescription": "Customer wasn't found",
+                      "errorSource": "string"
+                    }
+                  },
+                  "Offer Not Found": {
+                    "description": "This offer Id Not Found",
+                    "value": {
+                      "error": "Offer Not Found",
+                      "errorDescription": "This offer Id Not Found",
+                      "errorSource": "string"
+                    }
+                  },
+                  "Purchase Failed": {
+                    "description": "Purchase failed",
+                    "value": {
+                      "error": "Purchase Failed",
+                      "errorDescription": "Purchase failed",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferSubscribe"
+                }
+              }
+            },
+            "description": "Possible `error` values:\n              - `Customer is not found`\n              - `Purchase failed`\n              - `This offer Id Not Found`\n"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Method Not Allowed": {
+                    "description": "This method is not allowed",
+                    "value": {
+                      "error": "Method Not Allowed",
+                      "errorDescription": "This HTTP Method is not available on this service ",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferSubscribe"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Incompatible offer": {
+                    "description": "The offer is incompatible with one of the subscribed offers",
+                    "value": {
+                      "error": "Incompatible offer",
+                      "errorDescription": "The offer is incompatible with one of the subscribed offers",
+                      "errorSource": "CLIENT",
+                      "additionalInfo": {
+                        "incompatibleOffers": [
+                          "offerId1",
+                          "offerId2",
+                          "offerId3"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorIncompatibleOffer"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Too Many Requests": {
+                    "description": "Too Many Requests",
+                    "value": {
+                      "error": "Too Many Requests",
+                      "errorDescription": "Maximum number of requests is reached",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferSubscribe"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Internal Server Error": {
+                    "description": "Internal server error",
+                    "value": {
+                      "error": "Internal Server Error",
+                      "errorDescription": "Internal server error",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferSubscribe"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "External Server Error": {
+                    "description": "External server error",
+                    "value": {
+                      "error": "External Server Error",
+                      "errorDescription": "External server error",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferSubscribe"
+                }
+              }
+            },
+            "description": "External Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Internal Server Error": {
+                    "description": "Internal server error",
+                    "value": {
+                      "error": "Internal Server Error",
+                      "errorDescription": "Internal server error",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferSubscribe"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "tags": [
+          "Offer Management V2"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "source": "curl --request POST \\\n  --url https://bt-api-int.bouyguestelecom.fr/api/offers/subscribe \\\n  --header 'Authorization: Basic REPLACE_BASIC_AUTH' \\\n  --header 'X-Dpps-Trace-idcontracts: SOME_STRING_VALUE' \\\n  --header 'X-User-Agent: SOME_STRING_VALUE' \\\n  --header 'content-type: application/json' \\\n  --header 'x-Dpps-Trace-pfsnocompte: SOME_STRING_VALUE' \\\n  --header 'x-dsi-atk-moderate: SOME_STRING_VALUE' \\\n  --header 'x-kaltura-api-version: SOME_STRING_VALUE' \\\n  --header 'x-kaltura-secret: SOME_STRING_VALUE' \\\n  --header 'x-message-id: SOME_STRING_VALUE' \\\n  --header 'x-purchase-code: SOME_STRING_VALUE' \\\n  --header 'x-request-id: SOME_STRING_VALUE' \\\n  --header 'x-source: SOME_STRING_VALUE' \\\n  --header 'x-version: SOME_STRING_VALUE' \\\n  --data '{\"force\":true,\"idCommercialOffer\":\"string\"}'"
+          },
+          {
+            "lang": "Node",
+            "source": "const fetch = require('node-fetch');\n\nlet url = 'https://bt-api-int.bouyguestelecom.fr/api/offers/subscribe';\n\nlet options = {\n  method: 'POST',\n  headers: {\n    'x-kaltura-secret': 'SOME_STRING_VALUE',\n    'x-kaltura-api-version': 'SOME_STRING_VALUE',\n    'X-Dpps-Trace-idcontracts': 'SOME_STRING_VALUE',\n    'x-Dpps-Trace-pfsnocompte': 'SOME_STRING_VALUE',\n    'x-dsi-atk-moderate': 'SOME_STRING_VALUE',\n    'x-purchase-code': 'SOME_STRING_VALUE',\n    'x-request-id': 'SOME_STRING_VALUE',\n    'x-source': 'SOME_STRING_VALUE',\n    'x-message-id': 'SOME_STRING_VALUE',\n    'x-version': 'SOME_STRING_VALUE',\n    'X-User-Agent': 'SOME_STRING_VALUE',\n    Authorization: 'Basic REPLACE_BASIC_AUTH',\n    'content-type': 'application/json'\n  },\n  body: '{\"force\":true,\"idCommercialOffer\":\"string\"}'\n};\n\nfetch(url, options)\n  .then(res => res.json())\n  .then(json => console.log(json))\n  .catch(err => console.error('error:' + err));"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\n\nurl = \"https://bt-api-int.bouyguestelecom.fr/api/offers/subscribe\"\n\npayload = {\n    \"force\": True,\n    \"idCommercialOffer\": \"string\"\n}\nheaders = {\n    \"x-kaltura-secret\": \"SOME_STRING_VALUE\",\n    \"x-kaltura-api-version\": \"SOME_STRING_VALUE\",\n    \"X-Dpps-Trace-idcontracts\": \"SOME_STRING_VALUE\",\n    \"x-Dpps-Trace-pfsnocompte\": \"SOME_STRING_VALUE\",\n    \"x-dsi-atk-moderate\": \"SOME_STRING_VALUE\",\n    \"x-purchase-code\": \"SOME_STRING_VALUE\",\n    \"x-request-id\": \"SOME_STRING_VALUE\",\n    \"x-source\": \"SOME_STRING_VALUE\",\n    \"x-message-id\": \"SOME_STRING_VALUE\",\n    \"x-version\": \"SOME_STRING_VALUE\",\n    \"X-User-Agent\": \"SOME_STRING_VALUE\",\n    \"Authorization\": \"Basic REPLACE_BASIC_AUTH\",\n    \"content-type\": \"application/json\"\n}\n\nresponse = requests.request(\"POST\", url, json=payload, headers=headers)\n\nprint(response.text)"
+          }
+        ]
+      }
+    },
+    "/api/offers/unsubscribe": {
+      "post": {
+        "operationId": "unsubscribe",
+        "parameters": [
+          {
+            "description": "Header containing Kaltura Secret : x-kaltura-secret",
+            "in": "header",
+            "name": "x-kaltura-secret",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Header containing the api version : x-kaltura-api-version",
+            "in": "header",
+            "name": "x-kaltura-api-version",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Contract ID, required for BE, APIM...",
+            "in": "header",
+            "name": "X-Dpps-Trace-idcontracts",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "PfsNoCompte",
+            "in": "header",
+            "name": "x-Dpps-Trace-pfsnocompte",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "DSI Moderate Access Token, required for BE, APIM...",
+            "in": "header",
+            "name": "x-dsi-atk-moderate",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Purchase code",
+            "in": "header",
+            "name": "x-purchase-code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Request identifier on the IS (unique identifier generated during the call to each resource if not present at the input and provided to each service called synchronously)",
+            "in": "header",
+            "name": "x-request-id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Name of the sender of the request",
+            "in": "header",
+            "name": "x-source",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Unique for each interaction between ST (it can be used to manage anti-replay on power supplies for example)",
+            "in": "header",
+            "name": "x-message-id",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "API Version",
+            "in": "header",
+            "name": "x-version",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Identifier of the caller",
+            "in": "header",
+            "name": "X-User-Agent",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnsubscribeBodyDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferItemList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Bad Request": {
+                    "description": "Attribute missing or incorrect",
+                    "value": {
+                      "error": "Bad Request",
+                      "errorDescription": "Invalid format",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferUnsubscribe"
+                }
+              }
+            },
+            "description": "Bad Request"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Expired Token": {
+                    "description": "Token has expired",
+                    "value": {
+                      "error": "Expired Token",
+                      "errorDescription": "Token is expired",
+                      "errorSource": "string"
+                    }
+                  },
+                  "Invalid Token": {
+                    "description": "Token is invalid",
+                    "value": {
+                      "error": "Invalid Token",
+                      "errorDescription": "Token is invalid",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferUnsubscribe"
+                }
+              }
+            },
+            "description": "Invalid Token"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Cancellation Not Allowed": {
+                    "description": "Cancellation Not Allowed",
+                    "value": {
+                      "error": "Cancellation Not Allowed",
+                      "errorDescription": "Cancellation Not Allowed",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferUnsubscribe"
+                }
+              }
+            },
+            "description": "Cancellation Not Allowed"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Cancellation Failed": {
+                    "description": "Cancellation Failed",
+                    "value": {
+                      "error": "Cancellation Failed",
+                      "errorDescription": "Cancellation Failed",
+                      "errorSource": "string"
+                    }
+                  },
+                  "Customer Not Found": {
+                    "description": "Customer is not found",
+                    "value": {
+                      "error": "Customer Not Found",
+                      "errorDescription": "Customer wasn't found",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferUnsubscribe"
+                }
+              }
+            },
+            "description": "Possible `error` values:\n              - `Customer is not found`\n              - `Cancellation Failed`\n"
+          },
+          "405": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Method Not Allowed": {
+                    "description": "This method is not allowed",
+                    "value": {
+                      "error": "Method Not Allowed",
+                      "errorDescription": "This HTTP Method is not available on this service ",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferUnsubscribe"
+                }
+              }
+            },
+            "description": "Method Not Allowed"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Too Many Requests": {
+                    "description": "Too Many Requests",
+                    "value": {
+                      "error": "Too Many Requests",
+                      "errorDescription": "Maximum number of requests is reached",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferUnsubscribe"
+                }
+              }
+            },
+            "description": "Too Many Requests"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Internal Server Error": {
+                    "description": "Internal server error",
+                    "value": {
+                      "error": "Internal Server Error",
+                      "errorDescription": "Internal server error",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferUnsubscribe"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "External Server Error": {
+                    "description": "External server error",
+                    "value": {
+                      "error": "External Server Error",
+                      "errorDescription": "External server error",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferUnsubscribe"
+                }
+              }
+            },
+            "description": "External Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Internal Server Error": {
+                    "description": "Internal server error",
+                    "value": {
+                      "error": "Internal Server Error",
+                      "errorDescription": "Internal server error",
+                      "errorSource": "string"
+                    }
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorOfferUnsubscribe"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "tags": [
+          "Offer Management V2"
+        ],
+        "x-codeSamples": [
+          {
+            "lang": "Shell",
+            "source": "curl --request POST \\\n  --url https://bt-api-int.bouyguestelecom.fr/api/offers/unsubscribe \\\n  --header 'Authorization: Basic REPLACE_BASIC_AUTH' \\\n  --header 'X-Dpps-Trace-idcontracts: SOME_STRING_VALUE' \\\n  --header 'X-User-Agent: SOME_STRING_VALUE' \\\n  --header 'content-type: application/json' \\\n  --header 'x-Dpps-Trace-pfsnocompte: SOME_STRING_VALUE' \\\n  --header 'x-dsi-atk-moderate: SOME_STRING_VALUE' \\\n  --header 'x-kaltura-api-version: SOME_STRING_VALUE' \\\n  --header 'x-kaltura-secret: SOME_STRING_VALUE' \\\n  --header 'x-message-id: SOME_STRING_VALUE' \\\n  --header 'x-purchase-code: SOME_STRING_VALUE' \\\n  --header 'x-request-id: SOME_STRING_VALUE' \\\n  --header 'x-source: SOME_STRING_VALUE' \\\n  --header 'x-version: SOME_STRING_VALUE' \\\n  --data '{\"idCommercialOffer\":\"string\",\"idOffer\":\"string\"}'"
+          },
+          {
+            "lang": "Node",
+            "source": "const fetch = require('node-fetch');\n\nlet url = 'https://bt-api-int.bouyguestelecom.fr/api/offers/unsubscribe';\n\nlet options = {\n  method: 'POST',\n  headers: {\n    'x-kaltura-secret': 'SOME_STRING_VALUE',\n    'x-kaltura-api-version': 'SOME_STRING_VALUE',\n    'X-Dpps-Trace-idcontracts': 'SOME_STRING_VALUE',\n    'x-Dpps-Trace-pfsnocompte': 'SOME_STRING_VALUE',\n    'x-dsi-atk-moderate': 'SOME_STRING_VALUE',\n    'x-purchase-code': 'SOME_STRING_VALUE',\n    'x-request-id': 'SOME_STRING_VALUE',\n    'x-source': 'SOME_STRING_VALUE',\n    'x-message-id': 'SOME_STRING_VALUE',\n    'x-version': 'SOME_STRING_VALUE',\n    'X-User-Agent': 'SOME_STRING_VALUE',\n    Authorization: 'Basic REPLACE_BASIC_AUTH',\n    'content-type': 'application/json'\n  },\n  body: '{\"idCommercialOffer\":\"string\",\"idOffer\":\"string\"}'\n};\n\nfetch(url, options)\n  .then(res => res.json())\n  .then(json => console.log(json))\n  .catch(err => console.error('error:' + err));"
+          },
+          {
+            "lang": "Python",
+            "source": "import requests\n\nurl = \"https://bt-api-int.bouyguestelecom.fr/api/offers/unsubscribe\"\n\npayload = {\n    \"idCommercialOffer\": \"string\",\n    \"idOffer\": \"string\"\n}\nheaders = {\n    \"x-kaltura-secret\": \"SOME_STRING_VALUE\",\n    \"x-kaltura-api-version\": \"SOME_STRING_VALUE\",\n    \"X-Dpps-Trace-idcontracts\": \"SOME_STRING_VALUE\",\n    \"x-Dpps-Trace-pfsnocompte\": \"SOME_STRING_VALUE\",\n    \"x-dsi-atk-moderate\": \"SOME_STRING_VALUE\",\n    \"x-purchase-code\": \"SOME_STRING_VALUE\",\n    \"x-request-id\": \"SOME_STRING_VALUE\",\n    \"x-source\": \"SOME_STRING_VALUE\",\n    \"x-message-id\": \"SOME_STRING_VALUE\",\n    \"x-version\": \"SOME_STRING_VALUE\",\n    \"X-User-Agent\": \"SOME_STRING_VALUE\",\n    \"Authorization\": \"Basic REPLACE_BASIC_AUTH\",\n    \"content-type\": \"application/json\"\n}\n\nresponse = requests.request(\"POST\", url, json=payload, headers=headers)\n\nprint(response.text)"
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiErrorAdditionalInfo": {},
+      "ApiErrorIncompatibleOffer": {
+        "type": "object",
+        "properties": {
+          "incompatibleOffers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ApiErrorOfferRead": {
+        "type": "object",
+        "properties": {
+          "additionalInfo": {
+            "$ref": "#/components/schemas/ApiErrorAdditionalInfo"
+          },
+          "error": {
+            "type": "string"
+          },
+          "errorDescription": {
+            "type": "string"
+          },
+          "errorSource": {
+            "type": "string",
+            "enum": [
+              "CLIENT",
+              "INTERNAL",
+              "DSI_MAGENTO",
+              "DSI_MCUBE",
+              "KALTURA",
+              "KALTURA_EXPERIENCE_API"
+            ]
+          }
+        }
+      },
+      "ApiErrorOfferSubscribe": {
+        "type": "object",
+        "properties": {
+          "additionalInfo": {
+            "$ref": "#/components/schemas/ApiErrorAdditionalInfo"
+          },
+          "error": {
+            "type": "string"
+          },
+          "errorDescription": {
+            "type": "string"
+          },
+          "errorSource": {
+            "type": "string",
+            "enum": [
+              "CLIENT",
+              "INTERNAL",
+              "DSI_MAGENTO",
+              "DSI_MCUBE",
+              "DSI_AIBO",
+              "DSI_PORTAIL_VENTE",
+              "KALTURA",
+              "KALTURA_EXPERIENCE_API"
+            ]
+          }
+        }
+      },
+      "ApiErrorOfferUnsubscribe": {
+        "type": "object",
+        "properties": {
+          "additionalInfo": {
+            "$ref": "#/components/schemas/ApiErrorAdditionalInfo"
+          },
+          "error": {
+            "type": "string"
+          },
+          "errorDescription": {
+            "type": "string"
+          },
+          "errorSource": {
+            "type": "string",
+            "enum": [
+              "CLIENT",
+              "INTERNAL",
+              "DSI_MCUBE",
+              "KALTURA",
+              "KALTURA_EXPERIENCE_API"
+            ]
+          }
+        }
+      },
+      "ApplicationOfferItemV2": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OfferItemV2"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "activationLink": {
+                "type": "string",
+                "description": "Shapira activation link"
+              },
+              "commercial": {
+                "$ref": "#/components/schemas/CommercialOfferV2",
+                "description": "Commercial Informations about offer"
+              },
+              "entitlementState": {
+                "type": "string",
+                "enum": [
+                  "ENTITLED",
+                  "NOT_ENTITLED"
+                ]
+              },
+              "finalActivationLink": {
+                "type": "string",
+                "description": "Activation Link to be called by devices Computed by DALI"
+              },
+              "hide": {
+                "type": "boolean",
+                "description": "Is hidden?"
+              },
+              "infoPageTemplate": {
+                "type": "number",
+                "format": "double",
+                "description": "Page information template"
+              },
+              "parentalRating": {
+                "type": "string",
+                "description": "CSA level of the offer, possible values : CSA1, CSA2, CSA3, CSA4, CSA5"
+              },
+              "partnerOfferApk": {
+                "type": "string",
+                "description": "Partner's application package name"
+              },
+              "partnerOfferUrl": {
+                "type": "string",
+                "description": "Partner's application url"
+              },
+              "relatedBoutique": {
+                "type": "string",
+                "description": "Link between a collection and the offer"
+              },
+              "subscriptionType": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Type of subscription for application offer\n1 : Partner offer without account creation\n2 : Partner offer with fluent account creation\n3 : Partner offer with non-fluent account creation"
+              },
+              "trailerNonSubscribedOffer": {
+                "type": "string",
+                "description": "Video stream link for a non-subscribed customer"
+              }
+            }
+          }
+        ],
+        "required": [
+          "category",
+          "commercial",
+          "entitlementState",
+          "id",
+          "internalId",
+          "parentalRating",
+          "shortTitle"
+        ]
+      },
+      "BouquetOfferItemV2": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OfferItemV2"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "commercial": {
+                "$ref": "#/components/schemas/CommercialOfferV2",
+                "description": "Commercial Information about offer"
+              },
+              "entitlementState": {
+                "type": "string",
+                "enum": [
+                  "ENTITLED",
+                  "NOT_ENTITLED"
+                ]
+              },
+              "hide": {
+                "type": "boolean",
+                "description": "Is hidden?"
+              },
+              "liveShop": {
+                "$ref": "#/components/schemas/ShopLiveShopItem",
+                "description": "Aggregation of all linear channels providing from cup shop or live shop"
+              },
+              "parentalRating": {
+                "type": "string",
+                "description": "CSA level of the offer, possible values : CSA1, CSA2, CSA3, CSA4, CSA5"
+              },
+              "replayShop": {
+                "$ref": "#/components/schemas/ShopReplayShopItem",
+                "description": "Replay Shop Object"
+              },
+              "svodShop": {
+                "$ref": "#/components/schemas/ShopSVODShopItem",
+                "description": "sVop Shop Object"
+              },
+              "trailerNonSubscribedOffer": {
+                "type": "string",
+                "description": "Video stream link for a non-subscribed customer"
+              }
+            }
+          }
+        ],
+        "required": [
+          "category",
+          "commercial",
+          "entitlementState",
+          "id",
+          "internalId",
+          "liveShop",
+          "parentalRating",
+          "replayShop",
+          "shortTitle",
+          "svodShop"
+        ]
+      },
+      "Channel": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Channel id"
+          },
+          "lcn": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Channel number"
+          },
+          "name": {
+            "type": "string",
+            "description": "Channel name"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "Collection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Shop id"
+          },
+          "name": {
+            "type": "string",
+            "description": "Shop name"
+          },
+          "type": {
+            "type": "string",
+            "description": "Shop type",
+            "enum": [
+              "CUP_SHOP",
+              "VOD_SHOP",
+              "LIVE_SHOP"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type"
+        ]
+      },
+      "CommercialOfferSubscribedV2": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CommercialOfferV2"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "endDate": {
+                "type": "integer",
+                "format": "int64",
+                "description": "End date"
+              },
+              "partner": {
+                "$ref": "#/components/schemas/Partner",
+                "description": "Information about the partner. Should only be present for ApplicationOfferItem objects"
+              },
+              "startDate": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Start date"
+              }
+            }
+          }
+        ],
+        "required": [
+          "commercialType",
+          "id",
+          "subscriptionStatus"
+        ]
+      },
+      "CommercialOfferUnsubscribedV2": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CommercialOfferV2"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "promotionalDescription": {
+                "type": "string",
+                "description": "Promotional Description"
+              }
+            }
+          }
+        ],
+        "required": [
+          "commercialType",
+          "id",
+          "subscriptionStatus"
+        ]
+      },
+      "CommercialOfferV2": {
+        "type": "object",
+        "description": "One of CommercialOfferSubscribedV2, CommercialOfferUnsubscribedV2",
+        "discriminator": {
+          "mapping": {
+            "ACTIVATING": "#/components/schemas/CommercialOfferSubscribedV2",
+            "ACTIVE": "#/components/schemas/CommercialOfferSubscribedV2",
+            "DEACTIVATING": "#/components/schemas/CommercialOfferSubscribedV2",
+            "UNSPECIFIED": "#/components/schemas/CommercialOfferUnsubscribedV2"
+          },
+          "propertyName": "subscriptionStatus"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CommercialOfferSubscribedV2"
+          },
+          {
+            "$ref": "#/components/schemas/CommercialOfferUnsubscribedV2"
+          }
+        ],
+        "properties": {
+          "commercialType": {
+            "type": "string",
+            "description": "Commercial type",
+            "enum": [
+              "BONUS",
+              "OPTION",
+              "OFFERED_SERVICE",
+              "PARTNER_SERVICE"
+            ]
+          },
+          "customPriceLabel": {
+            "type": "string",
+            "description": "The price label (calculated by DALI)"
+          },
+          "finalAmount": {
+            "type": "number",
+            "format": "float",
+            "description": "The final amount, after the Promotion discount has been applied. You should use this sum to charge the card"
+          },
+          "id": {
+            "type": "string",
+            "description": "Commercial offer id"
+          },
+          "name": {
+            "type": "string",
+            "description": "Commercial name"
+          },
+          "originalAmount": {
+            "type": "number",
+            "format": "float",
+            "description": "The amount of the original transaction (before the Promotion discount)"
+          },
+          "promotions": {
+            "type": "array",
+            "description": "List of discounts on the offer",
+            "items": {
+              "$ref": "#/components/schemas/Promotion"
+            }
+          },
+          "subscriptionStatus": {
+            "type": "string",
+            "description": "Status of the subscription",
+            "enum": [
+              "ACTIVE",
+              "ACTIVATING",
+              "DEACTIVATING",
+              "UNSPECIFIED"
+            ]
+          }
+        },
+        "required": [
+          "commercialType",
+          "id",
+          "subscriptionStatus"
+        ]
+      },
+      "EntitledOption": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Option name"
+          },
+          "status": {
+            "type": "boolean",
+            "description": "Option status"
+          },
+          "value": {
+            "type": "string",
+            "description": "Number of the page returned"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "GetLink": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "default": "GET"
+          }
+        }
+      },
+      "Image": {
+        "type": "object",
+        "properties": {
+          "allowResize": {
+            "type": "boolean",
+            "description": "Resize allowed ?"
+          },
+          "aspectRatio": {
+            "type": "number",
+            "format": "double",
+            "description": "Image aspect ratio"
+          },
+          "height": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Image height"
+          },
+          "id": {
+            "type": "string",
+            "description": "Image ID"
+          },
+          "type": {
+            "type": "string",
+            "description": "Image type name"
+          },
+          "url": {
+            "type": "string",
+            "description": "Image URL"
+          },
+          "width": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Image width"
+          }
+        },
+        "required": [
+          "allowResize",
+          "aspectRatio",
+          "id",
+          "type",
+          "url"
+        ]
+      },
+      "LiveShopItem": {
+        "type": "object",
+        "properties": {
+          "collections": {
+            "type": "array",
+            "description": "List of all the shops the channel is included in",
+            "items": {
+              "$ref": "#/components/schemas/Collection"
+            }
+          },
+          "id": {
+            "type": "string",
+            "description": "Shop id"
+          },
+          "lcn": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Channel number"
+          },
+          "name": {
+            "type": "string",
+            "description": "Shop name"
+          }
+        },
+        "required": [
+          "collections",
+          "id",
+          "name"
+        ]
+      },
+      "MultiOfferItemV2": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OfferItemV2"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "commercial": {
+                "$ref": "#/components/schemas/CommercialOfferV2",
+                "description": "Commercial Informations about offer"
+              },
+              "entitlementState": {
+                "type": "string",
+                "enum": [
+                  "ENTITLED",
+                  "NOT_ENTITLED"
+                ]
+              },
+              "hide": {
+                "type": "boolean",
+                "description": "Is hidden?"
+              },
+              "parentalRatings": {
+                "type": "array",
+                "description": "CSA level of the offer, possible values : CSA1, CSA2, CSA3, CSA4, CSA5",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "relatedBoutique": {
+                "type": "string",
+                "description": "Link between a collection and the offer"
+              }
+            }
+          }
+        ],
+        "required": [
+          "category",
+          "commercial",
+          "entitlementState",
+          "id",
+          "internalId",
+          "parentalRatings",
+          "shortTitle"
+        ]
+      },
+      "OfferItemCollectionModelLinksModel": {
+        "type": "object",
+        "properties": {
+          "first": {
+            "$ref": "#/components/schemas/GetLink"
+          },
+          "last": {
+            "$ref": "#/components/schemas/GetLink"
+          },
+          "next": {
+            "$ref": "#/components/schemas/GetLink"
+          },
+          "self": {
+            "$ref": "#/components/schemas/GetLink"
+          }
+        },
+        "required": [
+          "self"
+        ]
+      },
+      "OfferItemList": {
+        "type": "object",
+        "description": "List of OfferItems",
+        "properties": {
+          "currentPage": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfferItemV2"
+            }
+          },
+          "links": {
+            "$ref": "#/components/schemas/OfferItemCollectionModelLinksModel"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "OfferItemModelActionLinks": {
+        "type": "object",
+        "properties": {
+          "subscribe": {
+            "$ref": "#/components/schemas/PostLink"
+          },
+          "unsubscribe": {
+            "$ref": "#/components/schemas/PostLink"
+          }
+        }
+      },
+      "OfferItemModelLinks": {
+        "type": "object",
+        "properties": {
+          "self": {
+            "$ref": "#/components/schemas/GetLink",
+            "description": "List the offers informations  \nOnly be present for offers with category BOUQUET or APPLICATION or SERVICE or MULTIOFFER\n"
+          }
+        }
+      },
+      "OfferItemV2": {
+        "type": "object",
+        "description": "One of BouquetOfferItemV2, ApplicationOfferItemV2, ServiceOfferItemV2, MultiOfferItemV2, UnmanagedApplicationItemV2",
+        "discriminator": {
+          "mapping": {
+            "APPLICATION": "#/components/schemas/ApplicationOfferItemV2",
+            "BOUQUET": "#/components/schemas/BouquetOfferItemV2",
+            "MULTIOFFER": "#/components/schemas/MultiOfferItemV2",
+            "SERVICE": "#/components/schemas/ServiceOfferItemV2",
+            "UNMANAGED_APPLICATION": "#/components/schemas/UnmanagedApplicationOfferItemV2"
+          },
+          "propertyName": "category"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BouquetOfferItemV2"
+          },
+          {
+            "$ref": "#/components/schemas/ApplicationOfferItemV2"
+          },
+          {
+            "$ref": "#/components/schemas/ServiceOfferItemV2"
+          },
+          {
+            "$ref": "#/components/schemas/MultiOfferItemV2"
+          },
+          {
+            "$ref": "#/components/schemas/UnmanagedApplicationOfferItemV2"
+          }
+        ],
+        "properties": {
+          "actions": {
+            "$ref": "#/components/schemas/OfferItemModelActionLinks",
+            "description": "OfferItemV2 Actions HATEOAS  \n  - subscribe:  Available only for NOT_ENTITLED offerItems  \n  - unsubscribe:  Available only for ENTITLED offerItems  \n  Can only be present for offers with category BOUQUET or APPLICATION or SERVICE or MULTIOFFER\n"
+          },
+          "catalogStartDateTime": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Subscription date"
+          },
+          "category": {
+            "type": "string",
+            "description": "DPPS category for Offer",
+            "enum": [
+              "BOUQUET",
+              "APPLICATION",
+              "SERVICE",
+              "MULTIOFFER",
+              "UNMANAGED_APPLICATION"
+            ]
+          },
+          "editorialWeight": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Default position of the offer relative to the others in the TV interface (increasing order and valid for both SMVOffers and PartnerOffers files)"
+          },
+          "genres": {
+            "type": "array",
+            "description": "Genres in the offer",
+            "items": {
+              "type": "string"
+            }
+          },
+          "id": {
+            "type": "string",
+            "description": "Offer identifier, known from commercial and Shapira PFS"
+          },
+          "images": {
+            "type": "array",
+            "description": "Table of images associated with the offer : logo offer, editorial image of the offer for a customer subscribed to the offer, editorial image of the offer for a customer not subscribed to the offer",
+            "items": {
+              "$ref": "#/components/schemas/Image"
+            }
+          },
+          "internalId": {
+            "type": "string",
+            "description": "Offer Id on PFS Shapira"
+          },
+          "links": {
+            "$ref": "#/components/schemas/OfferItemModelLinks",
+            "description": "OfferItemV2 Links HATEOAS  \n  - self:  Always available \n"
+          },
+          "options": {
+            "type": "array",
+            "description": "Table of offer options",
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          "shortDescription": {
+            "type": "string",
+            "description": "Short description offer"
+          },
+          "shortName": {
+            "type": "string",
+            "description": "Short name"
+          },
+          "shortTitle": {
+            "type": "string",
+            "description": "Offer name in Shapira. Can be different from commercial name offer"
+          }
+        },
+        "required": [
+          "category",
+          "id",
+          "internalId",
+          "shortTitle"
+        ]
+      },
+      "Option": {
+        "type": "object",
+        "properties": {
+          "entitledOptions": {
+            "type": "array",
+            "description": "List of entitled options",
+            "items": {
+              "$ref": "#/components/schemas/EntitledOption"
+            }
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of option"
+          }
+        },
+        "required": [
+          "entitledOptions",
+          "type"
+        ]
+      },
+      "Partner": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identifier of the partner"
+          },
+          "status": {
+            "type": "string",
+            "description": "Status of the partner, possible values : ACTIVE, CANCELED, CREATED, INACTIVE, NON-EXISTENT, UNSUBSCRIBED",
+            "enum": [
+              "ACTIVE",
+              "CANCELED",
+              "CREATED",
+              "INACTIVE",
+              "NON_EXISTENT",
+              "UNSUBSCRIBED"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "PostLink": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string"
+          },
+          "href": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "default": "POST"
+          }
+        }
+      },
+      "Promotion": {
+        "type": "object",
+        "properties": {
+          "applyTill": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Duration the discount is still active"
+          },
+          "customPromoLabel": {
+            "type": "string",
+            "description": "The promotion label (calculated by DALI)"
+          },
+          "duration": {
+            "$ref": "#/components/schemas/PromotionDuration",
+            "description": "Discount duration"
+          },
+          "expirationDate": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Discount expiration date"
+          },
+          "order": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The order to apply multiple discounts"
+          },
+          "price": {
+            "type": "number",
+            "format": "float",
+            "description": "Amount of discount applicable for a specific Promotion (includes decimal)"
+          }
+        },
+        "required": [
+          "price"
+        ]
+      },
+      "PromotionDuration": {
+        "type": "object",
+        "properties": {
+          "durationType": {
+            "type": "string",
+            "description": "enumerated string, default=forever\nSpecifies the time duration for which this discount is attached to the subscription.\nPossible values are :\n * one_time       :  The discount stays attached to the subscription till it is applied on an invoice once. It is removed after that from the subscription.\n * forever        :  The discount is attached to the subscription and applied on the invoices till it is explicitly removed.\n * limited_period :  The discount is attached to the subscription and applied on the invoices for a limited duration. This duration starts from the point it is applied to an invoice for the first time and expires after a period specified by period and period_unit\n"
+          },
+          "period": {
+            "type": "integer",
+            "format": "int32",
+            "description": "min=1\nThe duration of time for which the discount is attached to the subscription, in period_units. Applicable only when duration_type is limited_period\n"
+          },
+          "periodUnit": {
+            "type": "string",
+            "description": "The unit of time for period. Applicable only when duration_type is limited_period.\nPossible values are : \nday – A period of 24 hours.\nmonth – A period of 1 calendar month.\nyear – A period of 1 calendar year\n"
+          }
+        },
+        "required": [
+          "periodUnit"
+        ]
+      },
+      "ReplayShopItem": {
+        "type": "object",
+        "properties": {
+          "channels": {
+            "type": "array",
+            "description": "List of all channels in the shop",
+            "items": {
+              "$ref": "#/components/schemas/Channel"
+            }
+          },
+          "id": {
+            "type": "string",
+            "description": "Shop id"
+          },
+          "name": {
+            "type": "string",
+            "description": "Shop name"
+          },
+          "providerId": {
+            "type": "string",
+            "description": "Trigram unique shop Identifier"
+          }
+        },
+        "required": [
+          "channels",
+          "id",
+          "name",
+          "providerId"
+        ]
+      },
+      "SVODShopItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Shop id"
+          },
+          "name": {
+            "type": "string",
+            "description": "Shop name"
+          },
+          "providerId": {
+            "type": "string",
+            "description": "Trigram unique shop Identifier"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "providerId"
+        ]
+      },
+      "ServiceOfferItemV2": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OfferItemV2"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "commercial": {
+                "$ref": "#/components/schemas/CommercialOfferV2",
+                "description": "Commercial Informations about offer"
+              },
+              "entitlementState": {
+                "type": "string",
+                "enum": [
+                  "ENTITLED",
+                  "NOT_ENTITLED"
+                ]
+              },
+              "hide": {
+                "type": "boolean",
+                "description": "Is hidden?"
+              },
+              "relatedBoutique": {
+                "type": "string",
+                "description": "Link between a collection and the offer"
+              }
+            }
+          }
+        ],
+        "required": [
+          "category",
+          "commercial",
+          "entitlementState",
+          "id",
+          "internalId",
+          "shortTitle"
+        ]
+      },
+      "ShopLiveShopItem": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "List of items",
+            "items": {
+              "$ref": "#/components/schemas/LiveShopItem"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Total number of items"
+          }
+        },
+        "required": [
+          "total"
+        ]
+      },
+      "ShopReplayShopItem": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "List of items",
+            "items": {
+              "$ref": "#/components/schemas/ReplayShopItem"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Total number of items"
+          }
+        },
+        "required": [
+          "total"
+        ]
+      },
+      "ShopSVODShopItem": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "description": "List of items",
+            "items": {
+              "$ref": "#/components/schemas/SVODShopItem"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Total number of items"
+          }
+        },
+        "required": [
+          "total"
+        ]
+      },
+      "SubscribeBodyDTO": {
+        "type": "object",
+        "description": "Subscribe body request",
+        "properties": {
+          "force": {
+            "type": "boolean",
+            "description": "Force subscription"
+          },
+          "idCommercialOffer": {
+            "type": "string",
+            "description": "idCommercialOffer",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "idCommercialOffer"
+        ]
+      },
+      "UnmanagedApplicationOfferItemV2": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/OfferItemV2"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "hide": {
+                "type": "boolean",
+                "description": "Is hidden?"
+              },
+              "parentalRating": {
+                "type": "string",
+                "description": "CSA level of the offer, possible values : CSA1, CSA2, CSA3, CSA4, CSA5"
+              },
+              "partnerOfferApk": {
+                "type": "string",
+                "description": "Partner's application package name"
+              },
+              "partnerOfferUrl": {
+                "type": "string",
+                "description": "Partner's application url"
+              },
+              "relatedBoutique": {
+                "type": "string",
+                "description": "Link between a collection and the offer"
+              },
+              "trailerNonSubscribedOffer": {
+                "type": "string",
+                "description": "Video stream link for a non-subscribed customer"
+              }
+            }
+          }
+        ],
+        "required": [
+          "category",
+          "id",
+          "internalId",
+          "parentalRating",
+          "shortTitle"
+        ]
+      },
+      "UnsubscribeBodyDTO": {
+        "type": "object",
+        "description": "Unsubscribe body request",
+        "properties": {
+          "idCommercialOffer": {
+            "type": "string",
+            "description": "idCommercialOffer only should be used at the moment"
+          },
+          "idOffer": {
+            "type": "string",
+            "description": "idOffer shouldn't be used at the moment"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKeyScheme": {
+        "in": "header",
+        "name": "X-API-KEY",
+        "type": "apiKey"
+      },
+      "basicAuthorization": {
+        "description": "basicAuthorization used on DPPS ApiGateway (APIM)",
+        "scheme": "basic",
+        "type": "http"
+      },
+      "bearAuthorization": {
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "mutualTLS": {
+        "bearerFormat": "bear Token",
+        "scheme": "basic",
+        "type": "mutualTLS"
+      }
+    }
+  }
+}

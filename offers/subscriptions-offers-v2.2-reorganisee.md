@@ -185,7 +185,7 @@ tr { break-inside: avoid; }
 -   [4. Offer retrieval and data model](#uses-cases)
     -   [4.1. Shared DALI request headers](#global-management)
     -   [4.2. Retrieve the offer list](#retrieving-the-offer-list)
-        -   [4.2.1. Triggers](#triggers)
+        -   [4.2.1. Offer retrieval triggers](#triggers)
         -   [4.2.2. Principle of offer recovery](#principle-of-offer-recovery)
         -   [4.2.3. API to get offers](#api-to-get-offers)
         -   [4.2.4. Display metadata and illustrative examples](#using-metadata-for-the-ui-interface-1)
@@ -283,87 +283,43 @@ Included offers are separate from this DALI offer lifecycle and are not returned
 
 ## Shared DALI request headers {#global-management}
 
-The main headers passed in the requests:
+Use the common headers below for the product's requests to the DALI offer API through APIM. `M` means mandatory, `O` means optional, and `M*` means mandatory only when the request includes a body. Any additional header required by a specific operation is listed with that operation.
 
-  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  **Parameter**        **Value**                                                                                                     **Comment**
-  -------------------- ------------------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------
-  `Authorization`      \"Bearer \" + \$ATK                                                                                           Added by PFSProxy
+| Type of Param | Param | Type | M/O | Valeur |
+| --- | --- | --- | :---: | --- |
+| Header | `Authorization` | string | M | Basic credentials and Bearer token through public APIM |
+| Header | `x-kaltura-secret` | string | M | Kaltura secret provisioned through the APIM integration |
+| Header | `x-kaltura-api-version` | string | M | API version required by Swagger |
+| Header | `x-request-id` | string | O | Unique request identifier; UUID format recommended |
+| Header | `X-Dpps-Trace-idcontracts` | string | O | Contract identifier; supplied by APIM where applicable |
+| Header | `x-Dpps-Trace-pfsnocompte` | string | O | Client identifier; supplied by APIM where applicable |
+| Header | `x-version` | string | O | DALI offer API version |
+| Header | `X-User-Agent` | string | O | Caller identifier |
+| Header | `x-message-id` | string | O | Unique interaction/message identifier |
+| Header | `x-source` | string | O | Request sender name |
+| Header | `Content-Type` | string | M* | `application/json` when a request body is present |
 
-  `x-kaltura-secret`   \$KS                                                                                                          Added by PFSProxy (OPTION)
-
-  `x-request-id`       \$requestId                                                                                                   Randomly generated for each request ([RFC4122](https://www.ietf.org/rfc/rfc4122.txt))
-
-  `x-version`          2                                                                                                             Static, DALI API version
-
-  `X-User-Agent`       \$UA                                                                                                          Added by PFSProxy
-
-  `x-message-id`       Unique for each interaction between ST (it can be used to manage anti-replay on power supplies for example)   \-
-
-  `x-source`           Name of the sender of the request                                                                             \-
-
-  `Accept`             \"application/json;charset=UTF-8\"                                                                            N/A
-
-  `Content-Type`       \"application/json;charset=UTF-8\"                                                                            Only when a body is sent (POST/PUT)
-  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-Note: \* The absence of the headers is not blocking but these headers are required for the good operability / maintainability of the service exposed on the DSI side
+The product device calls the public APIM gateway and uses Basic authentication plus a Bearer token. The private DALI gateway uses an API key and mutual TLS for backend-to-backend traffic; the device must not call that gateway directly. APIM provides the integration-managed headers identified in the table.
 
 ## Retrieve the offer list {#retrieving-the-offer-list}
 
-### Triggers
+### Offer retrieval triggers {#triggers}
 
--   App or STB startup.
-
--   Update every 6 hours with a random value between -2 hours and +2 hours.
-
--   Access to the \"My Subscriptions\" menu.
-
--   If an entitlement inconsistency is detected when zapping.
-
--   If PDS is modified (GET lineup return 200OK).
+| Type | Trigger | Condition / timing |
+| --- | --- | --- |
+| Startup | App or STB startup | At startup |
+| Scheduled | Periodic retrieval | Every 6 hours, with a randomized offset of ±2 hours |
+| User initiated | Open the “My Subscriptions” menu | On menu entry |
+| Playback consistency | Entitlement inconsistency while zapping | When detected |
+| Catalog update | PDS modification | When `GET lineup` returns `200 OK` |
 
 ### Principle of offer recovery
 
 ::: {#clar-off-003 .review-note}
-**À clarifier / valider - CLAR-OFF-003 : pagination, ETag et cache.** Formuler explicitement la stratégie retenue par équipement : récupération complète ou paginée, utilisation de `If-None-Match`, traitement de `200` et `304`, mise à jour des données locales et rafraîchissement forcé après souscription. Distinguer les règles applicables des explications historiques, notamment la phrase barrée dans les paramètres d\'en-tête.
+**Décision produit confirmée - CLAR-OFF-003 : une seule requête List.** Le device ne filtre pas par catégorie, omet `entitlementState` pour recevoir les offres souscriptibles et souscrites, et ne suit pas `links.next` ni les compteurs de pages. Il traite `data` comme le snapshot complet. Le Swagger déclare pourtant `links.next`, `currentPage` et `totalPages`; il reste à confirmer avec DALI que le déploiement renvoie bien toutes les offres en un seul appel. Le device ne traite pas `links.next`.
 :::
 
-> ![](assets/media/image6.png){width="6.84303258967629in" height="4.678261154855643in"}
-
--   Pagination Branch :
-
-    -   The pagination branch involves the device sending a request to DALI with the page number and desired page size to retrieve offer metadata.
-
-    -   However, since « Basic » offers are not included in the offer retrieval response, which constitutes a significant amount of data to construct the entire set of offers, it is suggested to retrieve all pages with a single request and apply metadata verification based on the ETAG.
-
--   Etag Branch :
-
-    -   The ETAG branch entails the device querying DALI using the ETAG as information.
-
-    -   The ETAG is updated in the offer database with every 200 response following the offer retrieval request :
-
-        -   For the first offer retrieval call :
-
-            -   ETAG = \"\"
-
-            -   DALI retrieves the user\'s offers and calculates the ETAG based on offer metadata, then sends the list of offers to the device with the new ETAG (HTTP 200 response) see section 4.2.4 .
-
-            -   The device updates the old ETAG with the newly received one in the DALI response header.
-
-        -   For subsequent offer retrieval calls,:
-
-            -   ETAG = \"xxxx\"
-
-            -   DALI retrieves the user\'s offers again, calculates the new ETAG, and then compares the two ETAGs (the one received in the request and the newly calculated one):
-
-                -   If they are different:
-
-                    -   DALI sends the list of offers with the new ETAG in the response header, and the device updates the ETAG in its database
-
-                -   If they are identical:
-
-                    -   DALI responds with HTTP 304 to indicate to the device that there is no change in comparison to the local offer metadata, and no further processing is required
+For a List call, send the stored ETag in `If-None-Match` when available. On `304 Not Modified`, keep the local offer data. On `200 OK`, replace the local offer snapshot with the returned `data`. Update the stored ETag only when the response includes one; otherwise keep the previous value. After subscribe or unsubscribe, apply the action response locally and leave the ETag unchanged until the next scheduled List call.
 
 ### API to get offers
 
@@ -377,230 +333,20 @@ GET /api/offers
 
 ***[Header parameters :]{.underline}***
 
-  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  ***Param***                     ***Type***       ***Description***
-  ------------------------------- ---------------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  See [4.1](#global-management)                    
-
-  `If-None-Match`                 string           The use of ETAG is recommended when pagination is not applied to retrieve offers. ~~However, in our situation, with STB, it is essential to note that we paginate the offer list response, so the use of ETAG does not apply.~~
-  ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| Type of Param | Param | Type | M/O | Valeur |
+| --- | --- | --- | :---: | --- |
+| Header | See [4.1](#global-management) | - | - | Common request headers |
+| Header | `If-None-Match` | string | O | Previously received ETag for a conditional list request; 304 is returned when unchanged |
 
 ***[Query parameters :]{.underline}***
 
-```{=html}
-<table>
-```
-```{=html}
-<colgroup>
-```
-```{=html}
-<col style="width: 24%" />
-```
-```{=html}
-<col style="width: 23%" />
-```
-```{=html}
-<col style="width: 53%" />
-```
-```{=html}
-</colgroup>
-```
-```{=html}
-<thead>
-```
-```{=html}
-<tr class="header">
-```
-```{=html}
-<th>
-```
-`<em>`{=html}`<strong>`{=html}Param`</strong>`{=html}`</em>`{=html}
-```{=html}
-</th>
-```
-```{=html}
-<th>
-```
-`<em>`{=html}`<strong>`{=html}Type`</strong>`{=html}`</em>`{=html}
-```{=html}
-</th>
-```
-```{=html}
-<th>
-```
-`<em>`{=html}`<strong>`{=html}Description`</strong>`{=html}`</em>`{=html}
-```{=html}
-</th>
-```
-```{=html}
-</tr>
-```
-```{=html}
-</thead>
-```
-```{=html}
-<tbody>
-```
-```{=html}
-<tr class="odd">
-```
-```{=html}
-<td>
-```
-`<code>`{=html}category`</code>`{=html}
-```{=html}
-</td>
-```
-```{=html}
-<td>
-```
-```{=html}
-<p>
-```
-String
-```{=html}
-</p>
-```
-```{=html}
-<p>
-```
-Enum: \"BOUQUET\" \"APPLICATION\"  \"SERVICE\" \"MULTIOFFER\" \"APPLICATION_NON_MANAGE \"  
-```{=html}
-</p>
-```
-```{=html}
-</td>
-```
-```{=html}
-<td>
-```
-```{=html}
-<p>
-```
-STB : category=\"BOUQUET\", \"APPLICATION\",  \"SERVICE\", \"MULTIOFFER\", \"APPLICATION_NON_MANAGE \"  
-```{=html}
-</p>
-```
-```{=html}
-<p>
-```
-ATV : category=\"BOUQUET\", \"SERVICE\",
-```{=html}
-</p>
-```
-```{=html}
-<p>
-```
-Other device category=\"BOUQUET\", \"APPLICATION\",  \"SERVICE\", \"MULTIOFFER\"
-```{=html}
-</p>
-```
-```{=html}
-</td>
-```
-```{=html}
-</tr>
-```
-```{=html}
-<tr class="even">
-```
-```{=html}
-<td>
-```
-`<code>`{=html}entitlementState`</code>`{=html}
-```{=html}
-</td>
-```
-```{=html}
-<td>
-```
-```{=html}
-<p>
-```
-String
-```{=html}
-</p>
-```
-```{=html}
-<p>
-```
-Enum: \"ENTITLED\" \"NOT_ENTITLED\"
-```{=html}
-</p>
-```
-```{=html}
-</td>
-```
-```{=html}
-<td>
-```
-In this use case, omit this field to retrieve both subscribed and unsubscribed offers. The DALI v2 interface also requires it to be omitted when requesting `UNMANAGED_APPLICATION` offers.
-```{=html}
-</td>
-```
-```{=html}
-</tr>
-```
-```{=html}
-<tr class="odd">
-```
-```{=html}
-<td>
-```
-`<code>`{=html}page`</code>`{=html}
-```{=html}
-</td>
-```
-```{=html}
-<td>
-```
-integer
-```{=html}
-</td>
-```
-```{=html}
-<td>
-```
-Page index
-```{=html}
-</td>
-```
-```{=html}
-</tr>
-```
-```{=html}
-<tr class="even">
-```
-```{=html}
-<td>
-```
-`<code>`{=html}size`</code>`{=html}
-```{=html}
-</td>
-```
-```{=html}
-<td>
-```
-integer
-```{=html}
-</td>
-```
-```{=html}
-<td>
-```
-Page size
-```{=html}
-</td>
-```
-```{=html}
-</tr>
-```
-```{=html}
-</tbody>
-```
-```{=html}
-</table>
-```
+The optional `fields` parameter accepts comma-separated field or object selectors.
+
+| Type of Param | Param | Type | M/O | Valeur |
+| --- | --- | --- | :---: | --- |
+| Query | `categories` | array of strings | O | BOUQUET, APPLICATION, SERVICE, MULTIOFFER, UNMANAGED_APPLICATION |
+| Query | `entitlementState` | string | O | ENTITLED or NOT_ENTITLED; omit to retrieve both states, and always omit when requesting UNMANAGED_APPLICATION |
+| Query | `fields` | array of strings | O | Comma-separated field or object selectors |
 ***[Response success :]{.underline}***
 
 ::: api-response
@@ -636,10 +382,6 @@ Page size
 :::
 
 #### Common objects for each offer type 
-
-::: {#clar-off-004 .review-note}
-**À clarifier / valider - CLAR-OFF-004 : dictionnaire de données et catégories.** Vérifier avec le Swagger les chemins JSON exacts, leur casse, les espaces présents dans certains chemins, les types et les valeurs d\'énumération. Exemples à rapprocher du contrat : `commercial.commercialType` déclaré `Integer` avec la valeur `OPTION`, `commercial.name` déclaré `Integer`, et la correspondance entre `APPLICATION_NON_MANAGE` dans les paramètres et `UNMANAGED_APPLICATION` dans les types d\'offres. Les valeurs existantes sont conservées en attendant cette vérification.
-:::
 
 ```{=html}
 <table>
@@ -915,7 +657,7 @@ Used for display.
 ```{=html}
 <td>
 ```
-`<code>`{=html}Images\[\].type`</code>`{=html}
+`<code>`{=html}images\[\].type`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -949,7 +691,7 @@ Used for display.
 ```{=html}
 <td>
 ```
-`<code>`{=html}Images\[\].height`</code>`{=html}
+`<code>`{=html}images\[\].height`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -982,7 +724,7 @@ O
 ```{=html}
 <td>
 ```
-`<code>`{=html}Images\[\].width`</code>`{=html}
+`<code>`{=html}images\[\].width`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -1016,7 +758,7 @@ Used for display.
 ```{=html}
 <td>
 ```
-`<code>`{=html}Images\[\].aspectRatio`</code>`{=html}
+`<code>`{=html}images\[\].aspectRatio`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -1050,7 +792,7 @@ Used for display.
 ```{=html}
 <td>
 ```
-`<code>`{=html}.images\[\]. url`</code>`{=html}
+`<code>`{=html}images\[\].url`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -1956,7 +1698,7 @@ Unique commercial identifier used for subscribe or unsubscribe actions
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial. subscriptionStatus`</code>`{=html}
+`<code>`{=html}commercial.subscriptionStatus`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -1980,7 +1722,7 @@ M
 ```{=html}
 <p>
 ```
-Used to now if the offer is Active, Desactive, Activating or unspecified
+Indicates the subscription process state. Allowed values: ACTIVE, ACTIVATING, DEACTIVATING, UNSPECIFIED.
 ```{=html}
 </p>
 ```
@@ -2010,7 +1752,7 @@ In our case, to circumvent the DSI issues with the propagation of subscription i
 ```{=html}
 <td>
 ```
-`<code>`{=html}Integer`</code>`{=html}
+`<code>`{=html}String/Enum`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -2034,7 +1776,7 @@ Offer type from a commercial point of view
 ```{=html}
 <p>
 ```
-Known values: OPTION, \...
+Known values: BONUS, OPTION, OFFERED_SERVICE, PARTNER_SERVICE.
 ```{=html}
 </p>
 ```
@@ -2064,7 +1806,7 @@ Used for display.
 ```{=html}
 <td>
 ```
-`<code>`{=html}Integer`</code>`{=html}
+`<code>`{=html}String`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -2091,7 +1833,7 @@ Commercial wording of an offer
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial .originalAmount`</code>`{=html}
+`<code>`{=html}commercial.originalAmount`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -2199,7 +1941,7 @@ Used for the rules to promotion display (Ex: finalAmount+"euros")
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial.promotions`</code>`{=html}
+`<code>`{=html}commercial.promotions`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -2233,14 +1975,14 @@ Object describe the promotion
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. price`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].price`</code>`{=html}
 ```{=html}
 </td>
 ```
 ```{=html}
 <td>
 ```
-`<code>`{=html}Integer 64`</code>`{=html}
+`<code>`{=html}Float`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -2382,7 +2124,7 @@ Used for display
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -2416,7 +2158,7 @@ Used for display.
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration. durationType`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration.durationType`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -2501,7 +2243,7 @@ limited_period : The discount is attached to the subscription and applied on the
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration. period`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration.period`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -2535,7 +2277,7 @@ Duration period, min=1 The duration of time for which the discount is attached t
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration. periodUnit`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration.periodUnit`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -2569,7 +2311,7 @@ The unit of time for period. Applicable only when duration_type is limited_perio
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial. promotionalDescription`</code>`{=html}
+`<code>`{=html}commercial.promotionalDescription`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -2603,7 +2345,7 @@ Used for display (not used to day)
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial.startDate`</code>`{=html}
+`<code>`{=html}commercial.startDate`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -2637,7 +2379,7 @@ Not used
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial.endDate`</code>`{=html}
+`<code>`{=html}commercial.endDate`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -3837,7 +3579,7 @@ Unique commercial identifier used for subscribe or unsubscribe actions
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial. subscriptionStatus`</code>`{=html}
+`<code>`{=html}commercial.subscriptionStatus`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -3858,7 +3600,7 @@ M
 ```{=html}
 <td>
 ```
-Used to now if the offer is Active, Desactivating, Activating or unspecified
+Indicates the subscription process state. Allowed values: ACTIVE, ACTIVATING, DEACTIVATING, UNSPECIFIED.
 ```{=html}
 </td>
 ```
@@ -3871,7 +3613,7 @@ Used to now if the offer is Active, Desactivating, Activating or unspecified
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.Partner`</code>`{=html}
+`<code>`{=html}commercial.partner`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -3905,7 +3647,7 @@ It contains the activation status of the partner offer.
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.Partner.id`</code>`{=html}
+`<code>`{=html}commercial.partner.id`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -3939,7 +3681,7 @@ Identifier of the partner
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.Partner.status`</code>`{=html}
+`<code>`{=html}commercial.partner.status`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -3960,7 +3702,7 @@ M
 ```{=html}
 <td>
 ```
-Status of the account creation in partner side , possible values : ACTIVE, CANCELED, CREATED, INACTIVE, NON-EXISTENT, UNSUBSCRIBED
+Status of the account creation on the partner side. Allowed values: ACTIVE, CANCELED, CREATED, INACTIVE, NON_EXISTENT, UNSUBSCRIBED.
 ```{=html}
 </td>
 ```
@@ -3980,7 +3722,7 @@ Status of the account creation in partner side , possible values : ACTIVE, CANCE
 ```{=html}
 <td>
 ```
-`<code>`{=html}Integer`</code>`{=html}
+`<code>`{=html}String/Enum`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -4034,7 +3776,7 @@ NOT used.
 ```{=html}
 <td>
 ```
-`<code>`{=html}Integer`</code>`{=html}
+`<code>`{=html}String`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -4061,7 +3803,7 @@ Commercial wording of an offer
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial .originalAmount`</code>`{=html}
+`<code>`{=html}commercial.originalAmount`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -4169,7 +3911,7 @@ Used for the rules to promotion display (Ex: finalAmount+"euros")
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial.promotions`</code>`{=html}
+`<code>`{=html}commercial.promotions`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -4203,14 +3945,14 @@ Object describe the promotion
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. price`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].price`</code>`{=html}
 ```{=html}
 </td>
 ```
 ```{=html}
 <td>
 ```
-`<code>`{=html}Integer 64`</code>`{=html}
+`<code>`{=html}Float`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -4352,7 +4094,7 @@ Used for display
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -4386,7 +4128,7 @@ Used for display.
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration. durationType`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration.durationType`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -4471,7 +4213,7 @@ limited_period : The discount is attached to the subscription and applied on the
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration. period`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration.period`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -4505,7 +4247,7 @@ Duration period, min=1 The duration of time for which the discount is attached t
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration. periodUnit`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration.periodUnit`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -4539,7 +4281,7 @@ The unit of time for period. Applicable only when duration_type is limited_perio
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial. promotionalDescription`</code>`{=html}
+`<code>`{=html}commercial.promotionalDescription`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -4573,7 +4315,7 @@ Used for display (not used to day)
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial.startDate`</code>`{=html}
+`<code>`{=html}commercial.startDate`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -4607,7 +4349,7 @@ Not used
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial.endDate`</code>`{=html}
+`<code>`{=html}commercial.endDate`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -5466,7 +5208,7 @@ Unique commercial identifier used for subscribe or unsubscribe actions
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial. subscriptionStatus`</code>`{=html}
+`<code>`{=html}commercial.subscriptionStatus`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -5487,7 +5229,7 @@ M
 ```{=html}
 <td>
 ```
-Used to now if the offer is Active, Desactive, Activating or unspecified
+Indicates the subscription process state. Allowed values: ACTIVE, ACTIVATING, DEACTIVATING, UNSPECIFIED.
 ```{=html}
 </td>
 ```
@@ -5507,7 +5249,7 @@ Used to now if the offer is Active, Desactive, Activating or unspecified
 ```{=html}
 <td>
 ```
-`<code>`{=html}Integer`</code>`{=html}
+`<code>`{=html}String/Enum`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -5531,7 +5273,7 @@ Offer type from a commercial point of view
 ```{=html}
 <p>
 ```
-Known values: OPTION, \...
+Known values: BONUS, OPTION, OFFERED_SERVICE, PARTNER_SERVICE.
 ```{=html}
 </p>
 ```
@@ -5561,7 +5303,7 @@ Used for display.
 ```{=html}
 <td>
 ```
-`<code>`{=html}Integer`</code>`{=html}
+`<code>`{=html}String`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -5588,7 +5330,7 @@ Commercial wording of an offer
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial .originalAmount`</code>`{=html}
+`<code>`{=html}commercial.originalAmount`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -5696,7 +5438,7 @@ Used for the rules to promotion display (Ex: finalAmount+"euros")
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial.promotions`</code>`{=html}
+`<code>`{=html}commercial.promotions`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -5730,14 +5472,14 @@ Object describe the promotion
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. price`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].price`</code>`{=html}
 ```{=html}
 </td>
 ```
 ```{=html}
 <td>
 ```
-`<code>`{=html}Integer 64`</code>`{=html}
+`<code>`{=html}Float`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -5879,7 +5621,7 @@ Used for display
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -5913,7 +5655,7 @@ Used for display.
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration. durationType`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration.durationType`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -5998,7 +5740,7 @@ limited_period : The discount is attached to the subscription and applied on the
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration. period`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration.period`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -6032,7 +5774,7 @@ Duration period, min=1 The duration of time for which the discount is attached t
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration. periodUnit`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration.periodUnit`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -6066,7 +5808,7 @@ The unit of time for period. Applicable only when duration_type is limited_perio
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial. promotionalDescription`</code>`{=html}
+`<code>`{=html}commercial.promotionalDescription`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -6100,7 +5842,7 @@ Used for display (not used to day)
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial.startDate`</code>`{=html}
+`<code>`{=html}commercial.startDate`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -6134,7 +5876,7 @@ Not used
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial.endDate`</code>`{=html}
+`<code>`{=html}commercial.endDate`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -6372,7 +6114,7 @@ Unique commercial identifier used for subscribe or unsubscribe actions
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial. subscriptionStatus`</code>`{=html}
+`<code>`{=html}commercial.subscriptionStatus`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -6393,7 +6135,7 @@ M
 ```{=html}
 <td>
 ```
-Used to now if the offer is Active, Desactive, Activating or unspecified
+Indicates the subscription process state. Allowed values: ACTIVE, ACTIVATING, DEACTIVATING, UNSPECIFIED.
 ```{=html}
 </td>
 ```
@@ -6413,7 +6155,7 @@ Used to now if the offer is Active, Desactive, Activating or unspecified
 ```{=html}
 <td>
 ```
-`<code>`{=html}Integer`</code>`{=html}
+`<code>`{=html}String/Enum`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -6437,7 +6179,7 @@ Offer type from a commercial point of view
 ```{=html}
 <p>
 ```
-Known values: OPTION, \...
+Known values: BONUS, OPTION, OFFERED_SERVICE, PARTNER_SERVICE.
 ```{=html}
 </p>
 ```
@@ -6467,7 +6209,7 @@ Used for display.
 ```{=html}
 <td>
 ```
-`<code>`{=html}Integer`</code>`{=html}
+`<code>`{=html}String`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -6494,7 +6236,7 @@ Commercial wording of an offer
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial .originalAmount`</code>`{=html}
+`<code>`{=html}commercial.originalAmount`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -6602,7 +6344,7 @@ Used for the rules to promotion display (Ex: finalAmount+"euros")
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial.promotions`</code>`{=html}
+`<code>`{=html}commercial.promotions`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -6636,14 +6378,14 @@ Object describe the promotion
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. price`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].price`</code>`{=html}
 ```{=html}
 </td>
 ```
 ```{=html}
 <td>
 ```
-`<code>`{=html}Integer 64`</code>`{=html}
+`<code>`{=html}Float`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -6785,7 +6527,7 @@ Used for display
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -6819,7 +6561,7 @@ Used for display.
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration. durationType`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration.durationType`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -6904,7 +6646,7 @@ limited_period : The discount is attached to the subscription and applied on the
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration. period`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration.period`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -6938,7 +6680,7 @@ Duration period, min=1 The duration of time for which the discount is attached t
 ```{=html}
 <td>
 ```
-`<code>`{=html}commercial.promotions\[i\]. duration. periodUnit`</code>`{=html}
+`<code>`{=html}commercial.promotions\[i\].duration.periodUnit`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -6972,7 +6714,7 @@ The unit of time for period. Applicable only when duration_type is limited_perio
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial. promotionalDescription`</code>`{=html}
+`<code>`{=html}commercial.promotionalDescription`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -7006,7 +6748,7 @@ Used for display (not used to day)
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial.startDate`</code>`{=html}
+`<code>`{=html}commercial.startDate`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -7040,7 +6782,7 @@ Not used
 ```{=html}
 <td>
 ```
-`<code>`{=html}Commercial.endDate`</code>`{=html}
+`<code>`{=html}commercial.endDate`</code>`{=html}
 ```{=html}
 </td>
 ```
@@ -7388,143 +7130,17 @@ The user presses the subscribe button and enters his purchase code
 
 *[Header]{.underline}* :
 
-  ---------------------------------------------------------------------------------------------
-  **Parameter**                   **Value**                  **Comment**
-  ------------------------------- -------------------------- ----------------------------------
-  See [4.1](#global-management)                              
+| Type of Param | Param | Type | M/O | Valeur |
+| --- | --- | --- | :---: | --- |
+| Header | See [4.1](#global-management) | - | - | Common request headers |
+| Header | `x-purchase-code` | string | M | Purchase PIN entered by the user |
 
-  `x-purchase-code`               \$PurchaseCode             Purchase-code filled by the user
-  ---------------------------------------------------------------------------------------------
+*[Request body :]{.underline}*
 
-*[Query parameters :]{.underline}*
-
-```{=html}
-<table>
-```
-```{=html}
-<colgroup>
-```
-```{=html}
-<col style="width: 24%" />
-```
-```{=html}
-<col style="width: 23%" />
-```
-```{=html}
-<col style="width: 53%" />
-```
-```{=html}
-</colgroup>
-```
-```{=html}
-<thead>
-```
-```{=html}
-<tr class="header">
-```
-```{=html}
-<th>
-```
-`<em>`{=html}`<strong>`{=html}Param`</strong>`{=html}`</em>`{=html}
-```{=html}
-</th>
-```
-```{=html}
-<th>
-```
-`<em>`{=html}`<strong>`{=html}Type`</strong>`{=html}`</em>`{=html}
-```{=html}
-</th>
-```
-```{=html}
-<th>
-```
-`<em>`{=html}`<strong>`{=html}Description`</strong>`{=html}`</em>`{=html}
-```{=html}
-</th>
-```
-```{=html}
-</tr>
-```
-```{=html}
-</thead>
-```
-```{=html}
-<tbody>
-```
-```{=html}
-<tr class="odd">
-```
-```{=html}
-<td>
-```
-`<code>`{=html}idCommercialOffer`</code>`{=html}
-```{=html}
-</td>
-```
-```{=html}
-<td>
-```
-String
-```{=html}
-</td>
-```
-```{=html}
-<td>
-```
-Offer ID DSI
-```{=html}
-</td>
-```
-```{=html}
-</tr>
-```
-```{=html}
-<tr class="even">
-```
-```{=html}
-<td>
-```
-`<code>`{=html}force`</code>`{=html}
-```{=html}
-</td>
-```
-```{=html}
-<td>
-```
-Boolean
-```{=html}
-</td>
-```
-```{=html}
-<td>
-```
-```{=html}
-<p>
-```
-Force the subscription without incompatibility offers verfication
-```{=html}
-</p>
-```
-```{=html}
-<p>
-```
-Should be `<strong>`{=html}false`</strong>`{=html} for this use case
-```{=html}
-</p>
-```
-```{=html}
-</td>
-```
-```{=html}
-</tr>
-```
-```{=html}
-</tbody>
-```
-```{=html}
-</table>
-```
+| Type of Param | Param | Type | M/O | Valeur |
+| --- | --- | --- | :---: | --- |
+| Body | `idCommercialOffer` | string | M | Non-empty DSI commercial offer identifier |
+| Body | `force` | boolean | O | `false` initially; `true` only after user confirmation of incompatible offers |
 a)  **If the offer is not incompatible with other offers :**
 
 *[Success Response :]{.underline}*
@@ -7540,6 +7156,8 @@ a)  **If the offer is not incompatible with other offers :**
   ------------------------------------------------------ -------------- ----------------------- --------------------------- ------------------------------------------------------------
   1^(1)^                                                 401            Invalid Token           Token is invalid            Authentication process relaunched.
 
+  N/A                                                    403            Forbidden               ApiErrorOfferSubscribe       Product handling remains open (CLAR-OFF-011).
+
   \[2-11\]                                               N/A            N/A                     PFSProxy Internal Error     Just log error, but App goes on.
 
   400                                                    400            Bad Request             Bad Request                 Just log error, but App goes on.
@@ -7548,7 +7166,7 @@ a)  **If the offer is not incompatible with other offers :**
 
   405                                                    405            Method Not Allowed      Method Not Allowed          Just log error, but App goes on.
 
-  409                                                    409            Conflict                Incompatible offers found   Asks the user to confirm cancellation of compatible offers
+  409                                                    409            Conflict                Incompatible offers found   Asks the user to confirm cancellation of incompatible offers
 
   429                                                    429            Too many requests       Too many requests           Just log error, but App goes on.
 
@@ -7566,29 +7184,24 @@ a)  **If the offer is not incompatible with other offers :**
 b)  **If the offer is incompatible with other offers :**
 
 ::: {#clar-off-009 .review-note}
-**À clarifier / valider - CLAR-OFF-009 : incompatibilités et réponse 409.** Le DPI v2 confirme le cas `409` / `Incompatible offer`, mais ne précise pas suffisamment la structure du corps. Aligner la description « list of string » avec l\'exemple d\'objet contenant `additionalInfo.incompatibleOffers`, après vérification du contrat. Confirmer le libellé de l\'action « cancellation of compatible offers » par rapport aux offres incompatibles du parcours, et expliciter l\'enchaînement confirmation utilisateur / `force=true` ainsi que le traitement d\'une erreur lors de cette seconde requête. Aucun comportement n\'est corrigé par supposition.
+**À clarifier / valider - CLAR-OFF-009 : incompatibilités et réponse 409.** Le Swagger confirme le code `409` pour une offre incompatible et déclare `incompatibleOffers` comme tableau de chaînes à la racine du corps. L\'ancien exemple imbriqué dans `additionalInfo.incompatibleOffers` ne correspond pas au schéma publié; confirmer le payload réel si des champs d\'erreur supplémentaires sont attendus. Confirmer également le libellé de l\'action « cancellation of compatible offers » par rapport aux offres incompatibles du parcours, et le comportement si la seconde requête avec `force=true` échoue.
 :::
 
 > *[Success Response :]{.underline}*
 
 -   `http code 409`
 
--   Body : list of string Incompatible offers list
+-   Body : `ApiErrorIncompatibleOffer`, with an `incompatibleOffers` array of strings at the top level, as declared by Swagger.
 
 > Exemple :
 >
 > ``` json
 > {
->   "error": "Incompatible offer",
->   "errorDescription": "The offer is incompatible with one of the subscribed offers",
->   "errorSource": "CLIENT",
->   "additionalInfo": {
->     "incompatibleOffers": [
->       "offerId1",
->       "offerId2",
->       "offerId3"
->     ]
->   }
+>   "incompatibleOffers": [
+>     "offerId1",
+>     "offerId2",
+>     "offerId3"
+>   ]
 > }
 > ```
 
@@ -7626,9 +7239,9 @@ b)  **If the offer is incompatible with other offers :**
 
             -   To determine the activation status of an offer, it is necessary to call DALI with the \"get\" API for the offers by specifying the ID of the relevant offer.
 
-                -   The response to this request will contain a \"commercial.Partner\" object, which will indicate the activation status to adjust the user journey accordingly - field described in the table above:
+                -   The response to this request will contain a \"commercial.partner\" object, which will indicate the activation status to adjust the user journey accordingly - field described in the table above:
 
-                    -   If the commercial.Partner.status is different from \'ACTIVE\', then the QRCode (data.subscriptionType=2 as Disney+) or application thumbnail/deeplink that redirects to the account creation page (data.subscriptionType=3 as DORCEL) must be displayed.
+                    -   If the commercial.partner.status is different from \'ACTIVE\', then the QRCode (data.subscriptionType=2 as Disney+) or application thumbnail/deeplink that redirects to the account creation page (data.subscriptionType=3 as DORCEL) must be displayed.
 
                         -   The QR Code or the deep link is sent by DALI in the metadata : finalActivationLink
 
@@ -7642,17 +7255,12 @@ b)  **If the offer is incompatible with other offers :**
 GET /api/offers/by-commercial-id/{commercialId}
 ```
 
-::: {#clar-off-006 .review-note}
-**À clarifier / valider - CLAR-OFF-006 : réponse de la consultation unitaire.** Le DPI v2 décrit une réponse de type liste d\'objets `OfferItem` pour le Get par identifiant commercial, tandis que la description actuelle présente une enveloppe `data` avec `totalElements`, `totalPages` et `currentPage`. Vérifier avec le Swagger la forme exacte de la réponse, sa cardinalité et le chemin du statut partenaire ; ne pas déduire la forme à partir du seul document DPI.
-:::
-
 (le path de l\'api est défini dans le swagger)
 
-***[Header parameters :]{.underline}***
-
-  ***Param***                     ***Type***   ***Description***
-  ------------------------------- ------------ -------------------
-  See [4.1](#global-management)                
+| Type of Param | Param | Type | M/O | Valeur |
+| --- | --- | --- | :---: | --- |
+| Header | See [4.1](#global-management) | - | - | Common request headers |
+| Path | `commercialId` | string | M | Commercial offer identifier |
 
 ***[Response success :]{.underline}***
 
@@ -7709,10 +7317,6 @@ GET /api/offers/by-commercial-id/{commercialId}
 -   If data.subscriptionType=3 and commercial.partner.status != ACTIVE, then we offer the user to subscribe to the offer even if they have been subscribed for less than an hour.
 
 ## Customer journey adaptation after subscription
-
-::: {#clar-off-010 .review-note}
-**À clarifier / valider - CLAR-OFF-010 : compléments au cycle local de TRANSIENT.** La gestion locale de cet état, son démarrage à la souscription et sa sortie à l\'expiration des 120 secondes sont confirmés et décrits ci-dessous. Restent à préciser la clé de configuration effective, le comportement après un redémarrage pendant la temporisation et le traitement d\'un échec de rafraîchissement ou de droits toujours non propagés après l\'expiration. Ces cas ne remettent pas en cause la sortie de `TRANSIENT` à l\'échéance.
-:::
 
 a)  Objective\
     \
@@ -7819,10 +7423,6 @@ c)  Changes Introduced
 
 ## Unsubscription of an offer
 
-::: {#clar-off-011 .review-note}
-**À clarifier / valider - CLAR-OFF-011 : erreurs et cohérence locale après action.** Compléter la lecture des actions déjà validées dans les tableaux d\'erreurs par les conséquences UI et les données locales conservées en cas d\'indisponibilité, de réponse vide ou de résultat de souscription/résiliation incertain. Préciser les conditions de relance et leur articulation avec le rafraîchissement différé de l\'ETag. Ce point concerne les deux parcours ; il n\'ajoute pas de politique de reprise non validée.
-:::
-
 ***[Call Flow :]{.underline}***
 
 ![](assets/media/image24.png){width="4.579348206474191in" height="4.867924321959755in"}
@@ -7845,19 +7445,19 @@ i.  The user presses the unsubscribe button and enters his purchase code
 
 *[Header]{.underline}* :
 
-  ---------------------------------------------------------------------------------------------
-  **Parameter**                   **Value**                  **Comment**
-  ------------------------------- -------------------------- ----------------------------------
-  See [4.1](#global-management)                              
+| Type of Param | Param | Type | M/O | Valeur |
+| --- | --- | --- | :---: | --- |
+| Header | See [4.1](#global-management) | - | - | Common request headers |
+| Header | `x-purchase-code` | string | M | Purchase PIN entered by the user |
 
-  `x-purchase-code`               \$PurchaseCode             Purchase-code filled by the user
-  ---------------------------------------------------------------------------------------------
+*[Request body :]{.underline}*
 
-*[Query parameters :]{.underline}*
+| Type of Param | Param | Type | M/O | Valeur |
+| --- | --- | --- | :---: | --- |
+| Body | `idCommercialOffer` | string | M* | DSI commercial offer identifier |
+| Body | `idOffer` | string | O | Declared by Swagger but not currently used; do not send |
 
-  ***Param***           ***Type***   ***Description***
-  --------------------- ------------ -------------------
-  `idCommercialOffer`   String       Offer ID DSI
+* The product flow requires `idCommercialOffer`; the Swagger schema does not include it in the body's `required` list.
 
 *[Success Response :]{.underline}*
 
@@ -7877,6 +7477,8 @@ i.  The user presses the unsubscribe button and enters his purchase code
   **PFSPxyCode**                                         **HTTPCode**   **JSON.error**          **Cause**                 **Action to do**
   ------------------------------------------------------ -------------- ----------------------- ------------------------- ------------------------------------
   1^(1)^                                                 401            Invalid Token           Token is invalid          Authentication process relaunched.
+
+  N/A                                                    403            Forbidden               CANCELLATION_NOT_ALLOWED  Product handling to clarify (CLAR-OFF-011).
 
   \[2-11\]                                               N/A            N/A                     PFSProxy Internal Error   Just log error, but App goes on.
 
